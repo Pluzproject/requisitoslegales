@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Requisitos Legales - SIG</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        .chart-container { position: relative; height: 240px; width: 100%; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background-color: #f8fafc; font-weight: 600; color: #1e293b; }
+        tr:hover { background-color: #f1f5f9; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
+
+    <header class="bg-slate-900 text-white shadow-md py-6 px-8">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight">Matriz de Requisitos Legales</h1>
+                <p class="text-slate-400 text-sm mt-1">Sistemas Integrados de Gestión (SIG)</p>
+            </div>
+            <div id="loader" class="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-lg border border-slate-700">
+                <span class="animate-ping h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
+                <span class="text-xs text-slate-300 font-medium" id="status-text">Conectando con Google Sheets en vivo...</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-8">
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+            <div class="bg-white p-5 rounded-xl shadow-xs border border-slate-100 flex flex-col">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total de Normas</span>
+                <span class="text-3xl font-bold text-slate-900 mt-2" id="kpi-total">0</span>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-xs border border-slate-100 flex flex-col">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pilar SST</span>
+                <span class="text-3xl font-bold text-emerald-600 mt-2" id="kpi-sst">0</span>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-xs border border-slate-100 flex flex-col">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Normas Informativas</span>
+                <span class="text-3xl font-bold text-blue-600 mt-2" id="kpi-info">0</span>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-xs border border-slate-100 flex flex-col">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Último Año Detectado</span>
+                <span class="text-3xl font-bold text-amber-600 mt-2" id="kpi-year">-</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="bg-white p-5 rounded-xl shadow-xs border border-slate-100">
+                <h3 class="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Volumen de Normas por Año
+                </h3>
+                <div class="chart-container">
+                    <canvas id="chartYears"></canvas>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-xs border border-slate-100">
+                <h3 class="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Distribución por Pilar del SIG
+                </h3>
+                <div class="chart-container">
+                    <canvas id="chartPillars"></canvas>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-xs border border-slate-100">
+                <h3 class="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Clasificación por Tipo de Norma
+                </h3>
+                <div class="chart-container">
+                    <canvas id="chartTypes"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-xs border border-slate-100 overflow-hidden">
+            <div class="p-5 bg-slate-50 border-b border-slate-100 flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div class="w-full md:w-96">
+                    <input type="text" id="searchInput" placeholder="Escribe para buscar norma, descripción o autoridad..." 
+                           class="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-slate-400 transition-colors">
+                </div>
+                <div class="flex flex-wrap gap-3 w-full md:w-auto justify-end">
+                    <select id="filterPilar" class="bg-white border border-slate-200 rounded-lg text-sm px-3 py-2 focus:outline-none">
+                        <option value="">Todos los Pilares</option>
+                    </select>
+                    <select id="filterTipo" class="bg-white border border-slate-200 rounded-lg text-sm px-3 py-2 focus:outline-none">
+                        <option value="">Todos los Tipos</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto max-h-[550px] overflow-y-auto">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50 sticky top-0 z-10 shadow-xs">
+                        <tr>
+                            <th scope="col" class="w-28 text-xs font-semibold text-slate-500 uppercase tracking-wider">Fecha</th>
+                            <th scope="col" class="w-52 text-xs font-semibold text-slate-500 uppercase tracking-wider">Norma</th>
+                            <th scope="col" class="w-24 text-xs font-semibold text-slate-500 uppercase tracking-wider">Pilar</th>
+                            <th scope="col" class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sumilla / Descripción</th>
+                            <th scope="col" class="w-48 text-xs font-semibold text-slate-500 uppercase tracking-wider">Autoridad</th>
+                            <th scope="col" class="w-32 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tipo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="bg-white divide-y divide-slate-200 text-sm">
+                        </tbody>
+                </table>
+            </div>
+            
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 text-xs text-slate-500 flex justify-between items-center">
+                <div id="table-info">Mostrando 0 registros</div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Enlace de tu Google Sheet en formato CSV
+        const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIGndiBxp88Vdkl1NdJ4W63zLqKeotEg8_gBqUMnSz4JHef48eET9R6A265qibhQDbZUUxe5kM-n4L/pub?output=csv';
+        
+        let rawData = [];
+        let charts = {};
+
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchAndParseCSV();
+            document.getElementById('searchInput').addEventListener('input', applyFilters);
+            document.getElementById('filterPilar').addEventListener('change', applyFilters);
+            document.getElementById('filterTipo').addEventListener('change', applyFilters);
+        });
+
+        function fetchAndParseCSV() {
+            Papa.parse(csvUrl, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    rawData = results.data;
+                    document.getElementById('loader').style.display = 'none';
+                    populateDropdowns(rawData);
+                    renderDashboard(rawData);
+                },
+                error: function(err) {
+                    console.error("Error al conectar con la hoja:", err);
+                    document.getElementById('status-text').innerText = "Error de conexión.";
+                    document.getElementById('status-text').classList.add('text-red-400');
+                }
+            });
+        }
+
+        function populateDropdowns(data) {
+            const pilares = [...new Set(data.map(item => item['Pilar del SIG']).filter(Boolean))];
+            const tipos = [...new Set(data.map(item => item['Tipo de norma']).filter(Boolean))];
+
+            const pilarSelect = document.getElementById('filterPilar');
+            pilares.forEach(p => {
+                let opt = document.createElement('option');
+                opt.value = p; opt.innerText = p; pilarSelect.appendChild(opt);
+            });
+
+            const tipoSelect = document.getElementById('filterTipo');
+            tipos.forEach(t => {
+                let opt = document.createElement('option');
+                opt.value = t; opt.innerText = t; tipoSelect.appendChild(opt);
+            });
+        }
+
+        function applyFilters() {
+            const searchVal = document.getElementById('searchInput').value.toLowerCase();
+            const pilarVal = document.getElementById('filterPilar').value;
+            const tipoVal = document.getElementById('filterTipo').value;
+
+            const filtered = rawData.filter(item => {
+                const matchSearch = !searchVal || 
+                    (item['Norma'] && item['Norma'].toLowerCase().includes(searchVal)) ||
+                    (item['Sumilla / Descripción'] && item['Sumilla / Descripción'].toLowerCase().includes(searchVal)) ||
+                    (item['Contenido de la norma'] && item['Contenido de la norma'].toLowerCase().includes(searchVal)) ||
+                    (item['Autoridad'] && item['Autoridad'].toLowerCase().includes(searchVal));
+                
+                const matchPilar = !pilarVal || item['Pilar del SIG'] === pilarVal;
+                const matchTipo = !tipoVal || item['Tipo de norma'] === tipoVal;
+
+                return matchSearch && matchPilar && matchTipo;
+            });
+
+            renderTable(filtered);
+            updateCharts(filtered);
+            updateKPIs(filtered);
+        }
+
+        function renderDashboard(data) {
+            renderTable(data);
+            updateKPIs(data);
+            buildCharts(data);
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="whitespace-nowrap font-medium text-slate-500">${item['Fecha'] || '-'}</td>
+                    <td class="font-semibold text-slate-900 pr-4">${item['Norma'] || '-'}</td>
+                    <td class="whitespace-nowrap">
+                        <span class="px-2 py-0.5 rounded text-xs font-bold ${item['Pilar del SIG'] === 'SST' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-700'}">
+                            ${item['Pilar del SIG'] || '-'}
+                        </span>
+                    </td>
+                    <td class="text-slate-600 max-w-md truncate" title="${item['Sumilla / Descripción'] || ''}">${item['Sumilla / Descripción'] || '-'}</td>
+                    <td class="text-slate-600">${item['Autoridad'] || '-'}</td>
+                    <td class="whitespace-nowrap text-slate-500">${item['Tipo de norma'] || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('table-info').innerText = `Mostrando ${data.length} de ${rawData.length} registros`;
+        }
+
+        function updateKPIs(data) {
+            document.getElementById('kpi-total').innerText = data.length;
+            
+            const sstCount = data.filter(item => item['Pilar del SIG'] === 'SST').length;
+            document.getElementById('kpi-sst').innerText = sstCount;
+
+            const infoCount = data.filter(item => item['Tipo de norma'] === 'Informativo').length;
+            document.getElementById('kpi-info').innerText = infoCount;
+
+            const years = data.map(item => {
+                if(!item['Fecha']) return null;
+                const parts = item['Fecha'].split('/');
+                return parts.length === 3 ? parts[2] : null;
+            }).filter(Boolean);
+            if(years.length > 0) {
+                document.getElementById('kpi-year').innerText = Math.max(...years.map(Number));
+            } else {
+                document.getElementById('kpi-year').innerText = "-";
+            }
+        }
+
+        function getChartValues(data, field, isYear = false) {
+            const counts = {};
+            data.forEach(item => {
+                let key = item[field];
+                if (isYear && item['Fecha']) {
+                    const parts = item['Fecha'].split('/');
+                    key = parts.length === 3 ? parts[2] : 'Sin Año';
+                }
+                key = key || 'No Especificado';
+                counts[key] = (counts[key] || 0) + 1;
+            });
+            
+            let keys = Object.keys(counts);
+            if(isYear) keys.sort((a,b) => a - b);
+            
+            return {
+                labels: keys,
+                datasets: [{
+                    data: keys.map(k => counts[k]),
+                    backgroundColor: ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899', '#64748b'],
+                    borderWidth: 0
+                }]
+            };
+        }
+
+        function buildCharts(data) {
+            const ctxYear = document.getElementById('chartYears').getContext('2d');
+            const ctxPilar = document.getElementById('chartPillars').getContext('2d');
+            const ctxType = document.getElementById('chartTypes').getContext('2d');
+
+            charts.year = new Chart(ctxYear, {
+                type: 'bar',
+                data: getChartValues(data, 'Fecha', true),
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            charts.pilar = new Chart(ctxPilar, {
+                type: 'doughnut',
+                data: getChartValues(data, 'Pilar del SIG'),
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            charts.type = new Chart(ctxType, {
+                type: 'pie',
+                data: getChartValues(data, 'Tipo de norma'),
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function updateCharts(data) {
+            if(!charts.year) return;
+            
+            const yearData = getChartValues(data, 'Fecha', true);
+            charts.year.data.labels = yearData.labels;
+            charts.year.data.datasets[0].data = yearData.datasets[0].data;
+            charts.year.update();
+
+            const pilarData = getChartValues(data, 'Pilar del SIG');
+            charts.pilar.data.labels = pilarData.labels;
+            charts.pilar.data.datasets[0].data = pilarData.datasets[0].data;
+            charts.pilar.update();
+
+            const typeData = getChartValues(data, 'Tipo de norma');
+            charts.type.data.labels = typeData.labels;
+            charts.type.data.datasets[0].data = typeData.datasets[0].data;
+            charts.type.update();
+        }
+    </script>
+</body>
+</html>
