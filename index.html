@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Matriz de Requisitos Legales - SIG</title>
+    
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -92,12 +93,12 @@
     </main>
 
     <script>
-        // Configuración Inicial
+        // Configuración y variables globales
         const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIGndiBxp88Vdkl1NdJ4W63zLqKeotEg8_gBqUMnSz4JHef48eET9R6A265qibhQDbZUUxe5kM-n4L/pub?output=csv';
         let rawData = [];
         let charts = {};
 
-        // Event Listeners
+        // Inicialización
         window.addEventListener('DOMContentLoaded', () => {
             fetchData();
             document.getElementById('searchInput').addEventListener('input', applyFilters);
@@ -106,7 +107,7 @@
             document.getElementById('btnReset').addEventListener('click', resetDashboard);
         });
 
-        // Función de Carga de Datos
+        // Carga de Datos
         function fetchData() {
             Papa.parse(csvUrl, {
                 download: true,
@@ -118,12 +119,12 @@
                     renderAll(rawData);
                 },
                 error: function(err) {
-                    console.error("Error al cargar CSV:", err);
+                    console.error("Error al cargar:", err);
                 }
             });
         }
 
-        // Poblado de Filtros
+        // Población de Selects
         function populateDropdowns(data) {
             const pilares = [...new Set(data.map(i => i['Pilar del SIG']).filter(Boolean))];
             const tipos = [...new Set(data.map(i => i['Tipo de norma']).filter(Boolean))];
@@ -143,6 +144,51 @@
                 opt.textContent = t;
                 tipoSelect.appendChild(opt);
             });
+        }
+
+        // Lógica de Renderizado
+        function renderAll(data) {
+            renderTable(data);
+            renderKPIs(data);
+            updateCharts(data);
+        }
+
+        // Renderizado de Tabla
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            [...data].reverse().forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="text-blue-500">${item['Fecha'] || '-'}</td>
+                    <td class="font-bold text-blue-900">${item['Norma'] || '-'}</td>
+                    <td><span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-bold">${item['Pilar del SIG'] || '-'}</span></td>
+                    <td class="text-blue-800">${item['Sumilla / Descripción'] || '-'}</td>
+                    <td class="text-blue-600">${item['Autoridad'] || '-'}</td>
+                    <td class="text-blue-500">${item['Tipo de norma'] || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Renderizado de KPIs
+        function renderKPIs(data) {
+            const total = data.length;
+            const obligatorias = data.filter(i => i['Tipo de norma'] === 'Obligatorio').length;
+            
+            // Lógica para ayer (ajuste manual según fecha actual 25/05/2026)
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const y = yesterday.getFullYear();
+            const m = String(yesterday.getMonth() + 1).padStart(2, '0');
+            const d = String(yesterday.getDate()).padStart(2, '0');
+            const yStr = `${d}/${m}/${y}`;
+            
+            const ayer = data.filter(i => (i['Fecha'] || '').trim() === yStr).length;
+
+            document.getElementById('kpi-total').textContent = total;
+            document.getElementById('kpi-obligatorias').textContent = obligatorias;
+            document.getElementById('kpi-ayer').textContent = ayer;
         }
 
         // Lógica de Filtrado
@@ -169,48 +215,7 @@
             renderAll(rawData);
         }
 
-        // Renderizado General
-        function renderAll(data) {
-            renderTable(data);
-            renderKPIs(data);
-            updateCharts(data);
-        }
-
-        // Tabla
-        function renderTable(data) {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
-            [...data].reverse().forEach(item => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="text-blue-500">${item['Fecha'] || '-'}</td>
-                    <td class="font-bold text-blue-900">${item['Norma'] || '-'}</td>
-                    <td><span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-bold">${item['Pilar del SIG'] || '-'}</span></td>
-                    <td class="text-blue-800">${item['Sumilla / Descripción'] || '-'}</td>
-                    <td class="text-blue-600">${item['Autoridad'] || '-'}</td>
-                    <td class="text-blue-500">${item['Tipo de norma'] || '-'}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        // KPIs
-        function renderKPIs(data) {
-            const total = data.length;
-            const obligatorias = data.filter(i => i['Tipo de norma'] === 'Obligatorio').length;
-            
-            // Lógica para ayer
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yStr = `${String(yesterday.getDate()).padStart(2,'0')}/${String(yesterday.getMonth()+1).padStart(2,'0')}/${yesterday.getFullYear()}`;
-            const ayer = data.filter(i => i['Fecha'] === yStr).length;
-
-            document.getElementById('kpi-total').textContent = total;
-            document.getElementById('kpi-obligatorias').textContent = obligatorias;
-            document.getElementById('kpi-ayer').textContent = ayer;
-        }
-
-        // Gráficos
+        // Gráficos (Chart.js)
         function updateCharts(data) {
             ['chartYears', 'chartPillars', 'chartTypes'].forEach(id => { if(charts[id]) charts[id].destroy(); });
             
