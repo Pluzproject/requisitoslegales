@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    
     <style>
         .chart-container { position: relative; height: 240px; width: 100%; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #dbeafe; }
@@ -25,78 +26,142 @@
                 <p class="text-blue-300 text-sm mt-1">Sistemas Integrados de Gestión (SIG)</p>
             </div>
             <div class="flex items-center gap-4">
-                <button onclick="resetDashboard()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white font-bold text-sm transition">BORRAR FILTROS</button>
-                <div id="loader" class="flex items-center gap-2 bg-blue-800 px-4 py-2 rounded-lg border border-blue-700">
-                    <span class="animate-ping h-2.5 w-2.5 rounded-full bg-blue-400"></span>
-                    <span class="text-xs text-blue-100 font-medium">Sincronizando...</span>
-                </div>
+                <button id="btnReset" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white font-bold text-sm transition">BORRAR FILTROS</button>
             </div>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-8">
         
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-5" id="kpi-container"></div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5" id="kpi-container">
+            <div class="bg-white p-6 rounded-xl border shadow-sm">
+                <span class="text-xs uppercase font-bold text-blue-400">Total Normas</span>
+                <div class="text-4xl font-bold mt-2 text-blue-900" id="kpi-total">0</div>
+            </div>
+            <div class="bg-white p-6 rounded-xl border shadow-sm">
+                <span class="text-xs uppercase font-bold text-emerald-500">Normas Obligatorias</span>
+                <div class="text-4xl font-bold mt-2 text-emerald-700" id="kpi-obligatorias">0</div>
+            </div>
+            <div class="bg-white p-6 rounded-xl border shadow-sm">
+                <span class="text-xs uppercase font-bold text-amber-500">Identificadas Ayer</span>
+                <div class="text-4xl font-bold mt-2 text-amber-700" id="kpi-ayer">0</div>
+            </div>
+        </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="bg-white p-5 rounded-xl shadow-sm border border-blue-100">
-                <h3 class="text-sm font-semibold text-blue-800 mb-4">Volumen por Año</h3>
+                <h3 class="text-sm font-semibold text-blue-800 mb-4">Volumen de Normas por Año</h3>
                 <div class="chart-container"><canvas id="chartYears"></canvas></div>
             </div>
             <div class="bg-white p-5 rounded-xl shadow-sm border border-blue-100">
-                <h3 class="text-sm font-semibold text-blue-800 mb-4">Distribución por Pilar</h3>
+                <h3 class="text-sm font-semibold text-blue-800 mb-4">Distribución por Pilar SIG</h3>
                 <div class="chart-container"><canvas id="chartPillars"></canvas></div>
             </div>
             <div class="bg-white p-5 rounded-xl shadow-sm border border-blue-100">
-                <h3 class="text-sm font-semibold text-blue-800 mb-4">Tipo de Norma</h3>
+                <h3 class="text-sm font-semibold text-blue-800 mb-4">Clasificación por Tipo</h3>
                 <div class="chart-container"><canvas id="chartTypes"></canvas></div>
             </div>
         </div>
 
         <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden">
-            <div class="p-5 bg-blue-50 border-b border-blue-100 flex flex-col md:flex-row gap-4">
-                <input type="text" id="searchInput" placeholder="Buscar norma o descripción..." class="w-full md:w-96 px-4 py-2 border rounded-lg text-sm">
-                <select id="filterPilar" class="border rounded-lg text-sm px-3 py-2"><option value="">Todos los Pilares</option></select>
-                <select id="filterTipo" class="border rounded-lg text-sm px-3 py-2"><option value="">Todos los Tipos</option></select>
+            <div class="p-5 bg-blue-50 border-b border-blue-100 flex flex-col md:flex-row gap-4 items-center">
+                <input type="text" id="searchInput" placeholder="Buscar norma, descripción o autoridad..." class="w-full md:w-80 px-4 py-2 bg-white border border-blue-200 rounded-lg text-sm">
+                <select id="filterPilar" class="bg-white border border-blue-200 rounded-lg text-sm px-3 py-2">
+                    <option value="">Todos los Pilares</option>
+                </select>
+                <select id="filterTipo" class="bg-white border border-blue-200 rounded-lg text-sm px-3 py-2">
+                    <option value="">Todos los Tipos</option>
+                </select>
             </div>
-            <div class="overflow-x-auto max-h-[550px] overflow-y-auto">
-                <table class="min-w-full">
-                    <thead class="bg-blue-50 sticky top-0">
-                        <tr><th>Fecha</th><th>Norma</th><th>Pilar</th><th>Sumilla / Descripción</th><th>Autoridad</th><th>Tipo</th></tr>
+            <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                <table class="min-w-full divide-y divide-blue-200">
+                    <thead class="bg-blue-50 sticky top-0 z-10">
+                        <tr>
+                            <th class="text-xs uppercase">Fecha</th>
+                            <th class="text-xs uppercase">Norma</th>
+                            <th class="text-xs uppercase">Pilar</th>
+                            <th class="text-xs uppercase">Sumilla / Descripción</th>
+                            <th class="text-xs uppercase">Autoridad</th>
+                            <th class="text-xs uppercase">Tipo</th>
+                        </tr>
                     </thead>
-                    <tbody id="tableBody" class="text-sm"></tbody>
+                    <tbody id="tableBody" class="bg-white divide-y divide-blue-100 text-sm"></tbody>
                 </table>
             </div>
         </div>
     </main>
 
     <script>
+        // Configuración Inicial
         const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIGndiBxp88Vdkl1NdJ4W63zLqKeotEg8_gBqUMnSz4JHef48eET9R6A265qibhQDbZUUxe5kM-n4L/pub?output=csv';
-        let rawData = [], charts = {};
+        let rawData = [];
+        let charts = {};
 
-        window.addEventListener('DOMContentLoaded', () => { 
-            Papa.parse(csvUrl, { download: true, header: true, skipEmptyLines: true, complete: (res) => { 
-                rawData = res.data;
-                document.getElementById('loader').style.display = 'none';
-                populateDropdowns(rawData);
-                renderAll(rawData);
-            }});
+        // Event Listeners
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchData();
+            document.getElementById('searchInput').addEventListener('input', applyFilters);
+            document.getElementById('filterPilar').addEventListener('change', applyFilters);
+            document.getElementById('filterTipo').addEventListener('change', applyFilters);
+            document.getElementById('btnReset').addEventListener('click', resetDashboard);
         });
 
+        // Función de Carga de Datos
+        function fetchData() {
+            Papa.parse(csvUrl, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    rawData = results.data;
+                    populateDropdowns(rawData);
+                    renderAll(rawData);
+                },
+                error: function(err) {
+                    console.error("Error al cargar CSV:", err);
+                }
+            });
+        }
+
+        // Poblado de Filtros
         function populateDropdowns(data) {
             const pilares = [...new Set(data.map(i => i['Pilar del SIG']).filter(Boolean))];
             const tipos = [...new Set(data.map(i => i['Tipo de norma']).filter(Boolean))];
-            const pilarSel = document.getElementById('filterPilar');
-            const tipoSel = document.getElementById('filterTipo');
             
-            pilares.forEach(p => pilarSel.innerHTML += `<option value="${p}">${p}</option>`);
-            tipos.forEach(t => tipoSel.innerHTML += `<option value="${t}">${t}</option>`);
-            
-            pilarSel.addEventListener('change', applyFilters);
-            tipoSel.addEventListener('change', applyFilters);
-            document.getElementById('searchInput').addEventListener('input', applyFilters);
+            const pilarSelect = document.getElementById('filterPilar');
+            pilares.forEach(p => {
+                let opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = p;
+                pilarSelect.appendChild(opt);
+            });
+
+            const tipoSelect = document.getElementById('filterTipo');
+            tipos.forEach(t => {
+                let opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = t;
+                tipoSelect.appendChild(opt);
+            });
         }
 
+        // Lógica de Filtrado
+        function applyFilters() {
+            const searchVal = document.getElementById('searchInput').value.toLowerCase();
+            const pilarVal = document.getElementById('filterPilar').value;
+            const tipoVal = document.getElementById('filterTipo').value;
+
+            const filtered = rawData.filter(item => {
+                const matchSearch = (item['Norma'] || '').toLowerCase().includes(searchVal) || 
+                                    (item['Sumilla / Descripción'] || '').toLowerCase().includes(searchVal);
+                const matchPilar = !pilarVal || item['Pilar del SIG'] === pilarVal;
+                const matchTipo = !tipoVal || item['Tipo de norma'] === tipoVal;
+                return matchSearch && matchPilar && matchTipo;
+            });
+            renderAll(filtered);
+        }
+
+        // Reseteo
         function resetDashboard() {
             document.getElementById('searchInput').value = '';
             document.getElementById('filterPilar').value = '';
@@ -104,48 +169,65 @@
             renderAll(rawData);
         }
 
-        function applyFilters() {
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            const pilar = document.getElementById('filterPilar').value;
-            const tipo = document.getElementById('filterTipo').value;
-            const filtered = rawData.filter(i => 
-                ((i['Norma']||'').toLowerCase().includes(search) || (i['Sumilla / Descripción']||'').toLowerCase().includes(search)) && 
-                (!pilar || i['Pilar del SIG'] === pilar) && 
-                (!tipo || i['Tipo de norma'] === tipo)
-            );
-            renderAll(filtered);
-        }
-
+        // Renderizado General
         function renderAll(data) {
             renderTable(data);
             renderKPIs(data);
             updateCharts(data);
         }
 
+        // Tabla
         function renderTable(data) {
             const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = [...data].reverse().map(i => `
-                <tr><td class="text-blue-500">${i['Fecha']||'-'}</td><td class="font-bold text-blue-900">${i['Norma']||'-'}</td>
-                <td><span class="px-2 py-1 bg-blue-100 rounded text-xs">${i['Pilar del SIG']||'-'}</span></td>
-                <td class="text-blue-800">${i['Sumilla / Descripción']||'-'}</td><td class="text-blue-600">${i['Autoridad']||'-'}</td><td>${i['Tipo de norma']||'-'}</td></tr>
-            `).join('');
+            tbody.innerHTML = '';
+            [...data].reverse().forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="text-blue-500">${item['Fecha'] || '-'}</td>
+                    <td class="font-bold text-blue-900">${item['Norma'] || '-'}</td>
+                    <td><span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-bold">${item['Pilar del SIG'] || '-'}</span></td>
+                    <td class="text-blue-800">${item['Sumilla / Descripción'] || '-'}</td>
+                    <td class="text-blue-600">${item['Autoridad'] || '-'}</td>
+                    <td class="text-blue-500">${item['Tipo de norma'] || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
 
+        // KPIs
         function renderKPIs(data) {
-            const pilares = [...new Set(rawData.map(i => i['Pilar del SIG']).filter(Boolean))];
-            document.getElementById('kpi-container').innerHTML = `
-                <div class="bg-white p-5 rounded-xl border shadow-sm"><span class="text-xs uppercase font-bold text-blue-400">Total</span><div class="text-3xl font-bold mt-2">${data.length}</div></div>
-                ${pilares.map(p => `<div class="bg-white p-5 rounded-xl border shadow-sm filter-card" onclick="document.getElementById('filterPilar').value='${p}'; applyFilters();"><span class="text-xs uppercase font-bold text-blue-400">${p}</span><div class="text-2xl font-bold mt-2 text-blue-700">${data.filter(i => i['Pilar del SIG'] === p).length}</div></div>`).join('')}
-            `;
+            const total = data.length;
+            const obligatorias = data.filter(i => i['Tipo de norma'] === 'Obligatorio').length;
+            
+            // Lógica para ayer
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yStr = `${String(yesterday.getDate()).padStart(2,'0')}/${String(yesterday.getMonth()+1).padStart(2,'0')}/${yesterday.getFullYear()}`;
+            const ayer = data.filter(i => i['Fecha'] === yStr).length;
+
+            document.getElementById('kpi-total').textContent = total;
+            document.getElementById('kpi-obligatorias').textContent = obligatorias;
+            document.getElementById('kpi-ayer').textContent = ayer;
         }
 
+        // Gráficos
         function updateCharts(data) {
             ['chartYears', 'chartPillars', 'chartTypes'].forEach(id => { if(charts[id]) charts[id].destroy(); });
+            
             const counts = (key) => data.reduce((a, i) => { a[i[key]||'N/A'] = (a[i[key]||'N/A']||0)+1; return a; }, {});
             
-            charts.chartYears = new Chart(document.getElementById('chartYears'), {type:'bar', data:{labels:Object.keys(counts('Fecha')), datasets:[{data:Object.values(counts('Fecha')), backgroundColor:'#3b82f6'}]}});
-            charts.chartPillars = new Chart(document.getElementById('chartPillars'), {type:'doughnut', data:{labels:Object.keys(counts('Pilar del SIG')), datasets:[{data:Object.values(counts('Pilar del SIG')), backgroundColor:['#3b82f6','#10b981','#f59e0b']}]}});
-            charts.chartTypes = new Chart(document.getElementById('chartTypes'), {type:'pie', data:{labels:Object.keys(counts('Tipo de norma')), datasets:[{data:Object.values(counts('Tipo de norma')), backgroundColor:['#8b5cf6','#ef4444']}]}});
+            charts.chartYears = new Chart(document.getElementById('chartYears'), {
+                type: 'bar', 
+                data: { labels: Object.keys(counts('Fecha')), datasets: [{ data: Object.values(counts('Fecha')), backgroundColor: '#3b82f6' }] }
+            });
+            charts.chartPillars = new Chart(document.getElementById('chartPillars'), {
+                type: 'doughnut', 
+                data: { labels: Object.keys(counts('Pilar del SIG')), datasets: [{ data: Object.values(counts('Pilar del SIG')), backgroundColor: ['#3b82f6','#10b981','#f59e0b'] }] }
+            });
+            charts.chartTypes = new Chart(document.getElementById('chartTypes'), {
+                type: 'pie', 
+                data: { labels: Object.keys(counts('Tipo de norma')), datasets: [{ data: Object.values(counts('Tipo de norma')), backgroundColor: ['#8b5cf6','#ef4444'] }] }
+            });
         }
     </script>
 </body>
