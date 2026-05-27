@@ -10,12 +10,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     
     <style>
+        /* Contenedor de gráficos con altura fija para mayor visibilidad */
         .chart-container { 
             position: relative; 
-            height: 300px; 
+            height: 350px; 
             width: 100%; 
         }
         
+        /* Estilos generales de tabla */
         th, td { 
             padding: 12px; 
             border-bottom: 1px solid #dbeafe; 
@@ -127,7 +129,7 @@
     </main>
 
     <script>
-        // Configuración y variables globales
+        // --- CONFIGURACIÓN Y VARIABLES GLOBALES ---
         const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIGndiBxp88Vdkl1NdJ4W63zLqKeotEg8_gBqUMnSz4JHef48eET9R6A265qibhQDbZUUxe5kM-n4L/pub?output=csv';
         let rawData = [];
         let charts = {};
@@ -144,7 +146,7 @@
             return Array.from({length: n}, (_, i) => `hsl(${(i * 360) / n}, 70%, 60%)`);
         };
 
-        // Inicialización principal
+        // --- INICIALIZACIÓN ---
         window.addEventListener('DOMContentLoaded', () => {
             fetchData();
             document.getElementById('searchInput').addEventListener('input', applyFilters);
@@ -153,7 +155,7 @@
             document.getElementById('btnReset').addEventListener('click', resetDashboard);
         });
 
-        // Carga de datos desde CSV
+        // --- CARGA Y PROCESAMIENTO DE DATOS ---
         function fetchData() {
             Papa.parse(csvUrl, {
                 download: true,
@@ -170,7 +172,6 @@
             });
         }
 
-        // Población dinámica de filtros
         function populateDropdowns(data) {
             const pilares = [...new Set(data.map(i => i['Pilar del SIG']).filter(Boolean))];
             const tipos = [...new Set(data.map(i => i['Tipo de norma']).filter(Boolean))];
@@ -190,14 +191,13 @@
             });
         }
 
-        // Renderizado general
+        // --- RENDERIZADO ---
         function renderAll(data) {
             renderTable(data);
             renderKPIs(data);
             updateCharts(data);
         }
 
-        // Renderizado de tabla detallado
         function renderTable(data) {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
@@ -224,28 +224,32 @@
             });
         }
 
-        // Cálculo de KPIs
+        // --- LÓGICA DE KPIs ---
         function renderKPIs(data) {
+            const obli = data.filter(i => (i['Tipo de norma']||'').toLowerCase().includes('obligatorio')).length;
+            const info = data.filter(i => (i['Tipo de norma']||'').toLowerCase().includes('informativa')).length;
+            const refe = data.filter(i => (i['Tipo de norma']||'').toLowerCase().includes('referencial')).length;
+            
+            document.getElementById('kpi-total').textContent = data.length;
+            document.getElementById('kpi-obli').textContent = obli;
+            document.getElementById('kpi-info').textContent = info;
+            document.getElementById('kpi-refe').textContent = refe;
+
             const y = new Date();
             y.setDate(y.getDate() - 1);
             const yStr = `${String(y.getDate()).padStart(2,'0')}/${String(y.getMonth()+1).padStart(2,'0')}/${y.getFullYear()}`;
             
             const ayer = data.filter(i => (i['Fecha']||'').trim() === yStr);
-            const ayerCounts = ayer.reduce((a, i) => {
-                a[i['Tipo de norma']] = (a[i['Tipo de norma']] || 0) + 1;
-                return a;
+            const aCounts = ayer.reduce((a, i) => { 
+                a[i['Tipo de norma']] = (a[i['Tipo de norma']] || 0) + 1; 
+                return a; 
             }, {});
-
-            document.getElementById('kpi-total').textContent = data.length;
-            document.getElementById('kpi-obli').textContent = data.filter(i => i['Tipo de norma'] === 'Obligatorio').length;
-            document.getElementById('kpi-info').textContent = data.filter(i => i['Tipo de norma'] === 'Informativa').length;
-            document.getElementById('kpi-refe').textContent = data.filter(i => i['Tipo de norma'] === 'Referencial').length;
             
-            const detalleAyer = Object.entries(ayerCounts).map(([k, v]) => `${k}: ${v}`).join('<br>');
+            const detalleAyer = Object.entries(aCounts).map(([k, v]) => `${k}: ${v}`).join('<br>');
             document.getElementById('kpi-ayer-detalle').innerHTML = detalleAyer || 'Ninguna';
         }
 
-        // Lógica de filtrado
+        // --- FILTROS Y BÚSQUEDA ---
         function applyFilters() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const pilar = document.getElementById('filterPilar').value;
@@ -260,7 +264,6 @@
             renderAll(filtered);
         }
 
-        // Reseteo de filtros
         function resetDashboard() {
             document.getElementById('searchInput').value = '';
             document.getElementById('filterPilar').value = '';
@@ -268,7 +271,7 @@
             renderAll(rawData);
         }
 
-        // Actualización de gráficos
+        // --- ACTUALIZACIÓN DE GRÁFICOS ---
         function updateCharts(data) {
             ['chartYears', 'chartPillars', 'chartTypes'].forEach(id => { if(charts[id]) charts[id].destroy(); });
             
@@ -277,39 +280,24 @@
             // Gráfico 1: Años
             charts.chartYears = new Chart(document.getElementById('chartYears'), {
                 type: 'bar', 
-                data: { 
-                    labels: Object.keys(counts('year')), 
-                    datasets: [{ label: 'Normas', data: Object.values(counts('year')), backgroundColor: '#3b82f6' }] 
-                },
-                options: { 
-                    plugins: { title: { display: true, text: 'Años' }, legend: { display: false } } 
-                }
+                data: { labels: Object.keys(counts('year')), datasets: [{ label: 'Normas', data: Object.values(counts('year')), backgroundColor: '#3b82f6' }] },
+                options: { plugins: { title: { display: true, text: 'Años' }, legend: { display: false } } }
             });
             
             // Gráfico 2: Pilares
             const pData = counts('Pilar del SIG');
             charts.chartPillars = new Chart(document.getElementById('chartPillars'), {
                 type: 'doughnut', 
-                data: { 
-                    labels: Object.keys(pData), 
-                    datasets: [{ data: Object.values(pData), backgroundColor: getColors(Object.keys(pData).length) }] 
-                },
-                options: { 
-                    plugins: { title: { display: true, text: 'Pilares' }, legend: { position: 'right', labels: { font: { size: 10 } } } } 
-                }
+                data: { labels: Object.keys(pData), datasets: [{ data: Object.values(pData), backgroundColor: getColors(Object.keys(pData).length) }] },
+                options: { plugins: { title: { display: true, text: 'Pilares' }, legend: { position: 'right', labels: { font: { size: 10 } } } } }
             });
             
             // Gráfico 3: Tipos
             const tData = counts('Tipo de norma');
             charts.chartTypes = new Chart(document.getElementById('chartTypes'), {
                 type: 'doughnut', 
-                data: { 
-                    labels: Object.keys(tData), 
-                    datasets: [{ data: Object.values(tData), backgroundColor: getColors(Object.keys(tData).length) }] 
-                },
-                options: { 
-                    plugins: { title: { display: true, text: 'Tipos' }, legend: { position: 'bottom' } } 
-                }
+                data: { labels: Object.keys(tData), datasets: [{ data: Object.values(tData), backgroundColor: getColors(Object.keys(tData).length) }] },
+                options: { plugins: { title: { display: true, text: 'Tipos' }, legend: { position: 'bottom' } } }
             });
         }
     </script>
