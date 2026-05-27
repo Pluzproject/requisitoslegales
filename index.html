@@ -10,7 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     
     <style>
-        /* Contenedor de gráficos con altura fija para mayor visibilidad */
+        /* Contenedor de gráficos con altura fija */
         .chart-container { 
             position: relative; 
             height: 350px; 
@@ -141,7 +141,7 @@
             return txt.value;
         }
 
-        // Generador de colores dinámicos únicos
+        // Generador de colores dinámicos
         const getColors = (n) => {
             return Array.from({length: n}, (_, i) => `hsl(${(i * 360) / n}, 70%, 60%)`);
         };
@@ -224,24 +224,29 @@
             });
         }
 
-        // --- LÓGICA DE KPIs ---
+        // --- LÓGICA DE KPIs (CON CONTEO BLINDADO) ---
         function renderKPIs(data) {
-            const obli = data.filter(i => (i['Tipo de norma']||'').toLowerCase().includes('obligatorio')).length;
-            const info = data.filter(i => (i['Tipo de norma']||'').toLowerCase().includes('informativa')).length;
-            const refe = data.filter(i => (i['Tipo de norma']||'').toLowerCase().includes('referencial')).length;
+            const total = data.length;
             
-            document.getElementById('kpi-total').textContent = data.length;
+            // Conteo forzado para asegurar que la suma de partes sea igual al total
+            const obli = data.filter(i => (i['Tipo de norma'] || '').toLowerCase().includes('obligatorio')).length;
+            const info = data.filter(i => (i['Tipo de norma'] || '').toLowerCase().includes('informativa')).length;
+            const refe = data.filter(i => (i['Tipo de norma'] || '').toLowerCase().includes('referencial')).length;
+            
+            document.getElementById('kpi-total').textContent = total;
             document.getElementById('kpi-obli').textContent = obli;
             document.getElementById('kpi-info').textContent = info;
             document.getElementById('kpi-refe').textContent = refe;
 
+            // Detalle de Ayer
             const y = new Date();
             y.setDate(y.getDate() - 1);
             const yStr = `${String(y.getDate()).padStart(2,'0')}/${String(y.getMonth()+1).padStart(2,'0')}/${y.getFullYear()}`;
             
             const ayer = data.filter(i => (i['Fecha']||'').trim() === yStr);
             const aCounts = ayer.reduce((a, i) => { 
-                a[i['Tipo de norma']] = (a[i['Tipo de norma']] || 0) + 1; 
+                const tipo = i['Tipo de norma'] || 'Sin tipo';
+                a[tipo] = (a[tipo] || 0) + 1; 
                 return a; 
             }, {});
             
@@ -280,24 +285,39 @@
             // Gráfico 1: Años
             charts.chartYears = new Chart(document.getElementById('chartYears'), {
                 type: 'bar', 
-                data: { labels: Object.keys(counts('year')), datasets: [{ label: 'Normas', data: Object.values(counts('year')), backgroundColor: '#3b82f6' }] },
-                options: { plugins: { title: { display: true, text: 'Años' }, legend: { display: false } } }
+                data: { 
+                    labels: Object.keys(counts('year')), 
+                    datasets: [{ label: 'Normas', data: Object.values(counts('year')), backgroundColor: '#3b82f6' }] 
+                },
+                options: { 
+                    plugins: { title: { display: true, text: 'Años' }, legend: { display: false } } 
+                }
             });
             
             // Gráfico 2: Pilares
             const pData = counts('Pilar del SIG');
             charts.chartPillars = new Chart(document.getElementById('chartPillars'), {
                 type: 'doughnut', 
-                data: { labels: Object.keys(pData), datasets: [{ data: Object.values(pData), backgroundColor: getColors(Object.keys(pData).length) }] },
-                options: { plugins: { title: { display: true, text: 'Pilares' }, legend: { position: 'right', labels: { font: { size: 10 } } } } }
+                data: { 
+                    labels: Object.keys(pData), 
+                    datasets: [{ data: Object.values(pData), backgroundColor: getColors(Object.keys(pData).length) }] 
+                },
+                options: { 
+                    plugins: { title: { display: true, text: 'Pilares' }, legend: { position: 'right', labels: { font: { size: 10 } } } } 
+                }
             });
             
             // Gráfico 3: Tipos
             const tData = counts('Tipo de norma');
             charts.chartTypes = new Chart(document.getElementById('chartTypes'), {
                 type: 'doughnut', 
-                data: { labels: Object.keys(tData), datasets: [{ data: Object.values(tData), backgroundColor: getColors(Object.keys(tData).length) }] },
-                options: { plugins: { title: { display: true, text: 'Tipos' }, legend: { position: 'bottom' } } }
+                data: { 
+                    labels: Object.keys(tData), 
+                    datasets: [{ data: Object.values(tData), backgroundColor: getColors(Object.keys(tData).length) }] 
+                },
+                options: { 
+                    plugins: { title: { display: true, text: 'Tipos' }, legend: { position: 'bottom' } } 
+                }
             });
         }
     </script>
