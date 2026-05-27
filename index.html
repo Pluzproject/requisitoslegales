@@ -10,14 +10,31 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     
     <style>
-        .chart-container { position: relative; height: 240px; width: 100%; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #dbeafe; }
-        th { background-color: #f0f9ff; font-weight: 600; color: #1e3a8a; }
-        tr:hover { background-color: #eff6ff; }
-        .filter-card { cursor: pointer; transition: all 0.2s ease; }
-        .filter-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .chart-container { 
+            position: relative; 
+            height: 240px; 
+            width: 100%; 
+        }
+        
+        th, td { 
+            padding: 12px; 
+            border-bottom: 1px solid #dbeafe; 
+            vertical-align: top; 
+        }
+        
+        th { 
+            background-color: #f0f9ff; 
+            font-weight: 600; 
+            color: #1e3a8a; 
+            white-space: nowrap; 
+        }
+        
+        tr:hover { 
+            background-color: #eff6ff; 
+        }
     </style>
 </head>
+
 <body class="bg-blue-50 text-blue-900 font-sans min-h-screen">
 
     <header class="bg-blue-900 text-white shadow-md py-6 px-8">
@@ -26,23 +43,26 @@
                 <h1 class="text-2xl font-bold tracking-tight">Matriz de Requisitos Legales</h1>
                 <p class="text-blue-300 text-sm mt-1">Sistemas Integrados de Gestión (SIG)</p>
             </div>
-            <div class="flex items-center gap-4">
-                <button id="btnReset" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white font-bold text-sm transition">BORRAR FILTROS</button>
-            </div>
+            
+            <button id="btnReset" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white font-bold text-sm transition">
+                BORRAR FILTROS
+            </button>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <main class="max-w-[95%] mx-auto px-4 py-8 space-y-8">
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-5" id="kpi-container">
             <div class="bg-white p-6 rounded-xl border shadow-sm">
                 <span class="text-xs uppercase font-bold text-blue-400">Total Normas</span>
                 <div class="text-4xl font-bold mt-2 text-blue-900" id="kpi-total">0</div>
             </div>
+            
             <div class="bg-white p-6 rounded-xl border shadow-sm">
                 <span class="text-xs uppercase font-bold text-emerald-500">Normas Obligatorias</span>
                 <div class="text-4xl font-bold mt-2 text-emerald-700" id="kpi-obligatorias">0</div>
             </div>
+            
             <div class="bg-white p-6 rounded-xl border shadow-sm">
                 <span class="text-xs uppercase font-bold text-amber-500">Identificadas Ayer</span>
                 <div class="text-4xl font-bold mt-2 text-amber-700" id="kpi-ayer">0</div>
@@ -50,61 +70,66 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-blue-100">
-                <h3 class="text-sm font-semibold text-blue-800 mb-4">Volumen de Normas por Año</h3>
+            <div class="bg-white p-5 rounded-xl border shadow-sm">
                 <div class="chart-container"><canvas id="chartYears"></canvas></div>
             </div>
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-blue-100">
-                <h3 class="text-sm font-semibold text-blue-800 mb-4">Distribución por Pilar SIG</h3>
+            
+            <div class="bg-white p-5 rounded-xl border shadow-sm">
                 <div class="chart-container"><canvas id="chartPillars"></canvas></div>
             </div>
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-blue-100">
-                <h3 class="text-sm font-semibold text-blue-800 mb-4">Clasificación por Tipo</h3>
+            
+            <div class="bg-white p-5 rounded-xl border shadow-sm">
                 <div class="chart-container"><canvas id="chartTypes"></canvas></div>
             </div>
         </div>
 
         <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden">
-            <div class="p-5 bg-blue-50 border-b border-blue-100 flex flex-col md:flex-row gap-4 items-center">
-                <input type="text" id="searchInput" placeholder="Buscar norma, descripción o autoridad..." class="w-full md:w-80 px-4 py-2 bg-white border border-blue-200 rounded-lg text-sm">
-                <select id="filterPilar" class="bg-white border border-blue-200 rounded-lg text-sm px-3 py-2">
+            <div class="p-5 bg-blue-50 border-b flex flex-col md:flex-row gap-4">
+                <input type="text" id="searchInput" placeholder="Buscar..." class="w-full md:w-80 px-4 py-2 border rounded-lg text-sm">
+                
+                <select id="filterPilar" class="border rounded-lg text-sm px-3 py-2">
                     <option value="">Todos los Pilares</option>
                 </select>
-                <select id="filterTipo" class="bg-white border border-blue-200 rounded-lg text-sm px-3 py-2">
+                
+                <select id="filterTipo" class="border rounded-lg text-sm px-3 py-2">
                     <option value="">Todos los Tipos</option>
                 </select>
             </div>
-            <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
-                <table class="min-w-full divide-y divide-blue-200 table-fixed">
-                    <thead class="bg-blue-50 sticky top-0 z-10">
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-blue-50">
                         <tr>
-                            <th class="text-xs uppercase w-20">Fecha</th>
-                            <th class="text-xs uppercase w-40">Norma</th>
-                            <th class="text-xs uppercase w-32">Pilar</th>
-                            <th class="text-xs uppercase w-64">Sumilla / Descripción</th>
-                            <th class="text-xs uppercase w-32">Autoridad</th>
-                            <th class="text-xs uppercase w-24">Tipo</th>
-                            <th class="text-xs uppercase w-24">Enlace</th>
-                            <th class="text-xs uppercase w-80">Recomendación</th>
+                            <th class="w-24">Fecha</th>
+                            <th class="w-32">Norma</th>
+                            <th class="w-24">Pilar</th>
+                            <th class="w-64">Sumilla / Descripción</th>
+                            <th class="w-32">Autoridad</th>
+                            <th class="w-24">Tipo</th>
+                            <th class="w-20">Enlace</th>
+                            <th class="min-w-[400px]">Recomendación</th>
                         </tr>
                     </thead>
-                    <tbody id="tableBody" class="bg-white divide-y divide-blue-100 text-sm"></tbody>
+                    <tbody id="tableBody" class="bg-white"></tbody>
                 </table>
             </div>
         </div>
     </main>
 
     <script>
+        // Configuración y variables globales
         const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIGndiBxp88Vdkl1NdJ4W63zLqKeotEg8_gBqUMnSz4JHef48eET9R6A265qibhQDbZUUxe5kM-n4L/pub?output=csv';
         let rawData = [];
         let charts = {};
 
+        // Función para decodificar caracteres HTML
         function decodeHtml(html) {
             const txt = document.createElement("textarea");
             txt.innerHTML = html;
             return txt.value;
         }
 
+        // Inicialización principal
         window.addEventListener('DOMContentLoaded', () => {
             fetchData();
             document.getElementById('searchInput').addEventListener('input', applyFilters);
@@ -113,6 +138,7 @@
             document.getElementById('btnReset').addEventListener('click', resetDashboard);
         });
 
+        // Carga de datos desde CSV
         function fetchData() {
             Papa.parse(csvUrl, {
                 download: true,
@@ -122,87 +148,91 @@
                     rawData = results.data;
                     populateDropdowns(rawData);
                     renderAll(rawData);
-                },
-                error: function(err) { console.error("Error al cargar:", err); }
+                }
             });
         }
 
+        // Población dinámica de filtros
         function populateDropdowns(data) {
             const pilares = [...new Set(data.map(i => i['Pilar del SIG']).filter(Boolean))];
             const tipos = [...new Set(data.map(i => i['Tipo de norma']).filter(Boolean))];
             
-            const pilarSelect = document.getElementById('filterPilar');
             pilares.forEach(p => {
                 let opt = document.createElement('option');
                 opt.value = p;
                 opt.textContent = p;
-                pilarSelect.appendChild(opt);
+                document.getElementById('filterPilar').appendChild(opt);
             });
-
-            const tipoSelect = document.getElementById('filterTipo');
+            
             tipos.forEach(t => {
                 let opt = document.createElement('option');
                 opt.value = t;
                 opt.textContent = t;
-                tipoSelect.appendChild(opt);
+                document.getElementById('filterTipo').appendChild(opt);
             });
         }
 
+        // Renderizado general
         function renderAll(data) {
             renderTable(data);
             renderKPIs(data);
             updateCharts(data);
         }
 
+        // Renderizado de tabla detallado
         function renderTable(data) {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
+            
             [...data].reverse().forEach(item => {
                 const tr = document.createElement('tr');
+                tr.className = "hover:bg-blue-50";
+                
                 tr.innerHTML = `
-                    <td class="text-blue-500 truncate">${item['Fecha'] || '-'}</td>
-                    <td class="font-bold text-blue-900 truncate">${decodeHtml(item['Norma'] || '-')}</td>
-                    <td><span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-bold">${item['Pilar del SIG'] || '-'}</span></td>
-                    <td class="text-blue-800 text-xs">${decodeHtml(item['Sumilla / Descripción'] || '-')}</td>
-                    <td class="text-blue-600 truncate">${decodeHtml(item['Autoridad'] || '-')}</td>
-                    <td class="text-blue-500 truncate">${item['Tipo de norma'] || '-'}</td>
-                    <td>${(item['Enlace'] && item['Enlace'] !== '--') ? `<a href="${item['Enlace']}" target="_blank" class="text-blue-600 underline font-semibold">Ver</a>` : '-'}</td>
-                    <td class="text-gray-700 italic text-xs">${decodeHtml(item['Recomendación'] || '-')}</td>
+                    <td class="whitespace-nowrap">${item['Fecha'] || '-'}</td>
+                    <td class="font-bold">${decodeHtml(item['Norma'] || '-')}</td>
+                    <td>
+                        <span class="px-2 py-1 bg-blue-100 rounded text-xs">${item['Pilar del SIG'] || '-'}</span>
+                    </td>
+                    <td class="whitespace-normal text-xs">${decodeHtml(item['Sumilla / Descripción'] || '-')}</td>
+                    <td class="whitespace-normal text-xs">${decodeHtml(item['Autoridad'] || '-')}</td>
+                    <td class="text-xs">${item['Tipo de norma'] || '-'}</td>
+                    <td>
+                        ${(item['Enlace'] && item['Enlace'] !== '--') ? `<a href="${item['Enlace']}" target="_blank" class="text-blue-600 underline">Ver</a>` : '-'}
+                    </td>
+                    <td class="whitespace-normal italic font-medium text-gray-700 text-xs">${decodeHtml(item['Recomendación'] || '-')}</td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
+        // Cálculo de KPIs
         function renderKPIs(data) {
-            const total = data.length;
-            const obligatorias = data.filter(i => i['Tipo de norma'] === 'Obligatorio').length;
+            const y = new Date();
+            y.setDate(y.getDate() - 1);
+            const yStr = `${String(y.getDate()).padStart(2,'0')}/${String(y.getMonth()+1).padStart(2,'0')}/${y.getFullYear()}`;
             
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yStr = `${String(yesterday.getDate()).padStart(2, '0')}/${String(yesterday.getMonth() + 1).padStart(2, '0')}/${yesterday.getFullYear()}`;
-            
-            const ayer = data.filter(i => (i['Fecha'] || '').trim() === yStr).length;
-
-            document.getElementById('kpi-total').textContent = total;
-            document.getElementById('kpi-obligatorias').textContent = obligatorias;
-            document.getElementById('kpi-ayer').textContent = ayer;
+            document.getElementById('kpi-total').textContent = data.length;
+            document.getElementById('kpi-obligatorias').textContent = data.filter(i => i['Tipo de norma'] === 'Obligatorio').length;
+            document.getElementById('kpi-ayer').textContent = data.filter(i => (i['Fecha']||'').trim() === yStr).length;
         }
 
+        // Lógica de filtrado
         function applyFilters() {
-            const searchVal = document.getElementById('searchInput').value.toLowerCase();
-            const pilarVal = document.getElementById('filterPilar').value;
-            const tipoVal = document.getElementById('filterTipo').value;
-
-            const filtered = rawData.filter(item => {
-                const matchSearch = (item['Norma'] || '').toLowerCase().includes(searchVal) || 
-                                    (item['Sumilla / Descripción'] || '').toLowerCase().includes(searchVal);
-                const matchPilar = !pilarVal || item['Pilar del SIG'] === pilarVal;
-                const matchTipo = !tipoVal || item['Tipo de norma'] === tipoVal;
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const pilar = document.getElementById('filterPilar').value;
+            const tipo = document.getElementById('filterTipo').value;
+            
+            const filtered = rawData.filter(i => {
+                const matchSearch = (i['Norma']||'').toLowerCase().includes(search) || (i['Sumilla / Descripción']||'').toLowerCase().includes(search);
+                const matchPilar = !pilar || i['Pilar del SIG'] === pilar;
+                const matchTipo = !tipo || i['Tipo de norma'] === tipo;
                 return matchSearch && matchPilar && matchTipo;
             });
             renderAll(filtered);
         }
 
+        // Reseteo de filtros
         function resetDashboard() {
             document.getElementById('searchInput').value = '';
             document.getElementById('filterPilar').value = '';
@@ -210,6 +240,7 @@
             renderAll(rawData);
         }
 
+        // Actualización de gráficos Chart.js
         function updateCharts(data) {
             ['chartYears', 'chartPillars', 'chartTypes'].forEach(id => { if(charts[id]) charts[id].destroy(); });
             
@@ -219,10 +250,12 @@
                 type: 'bar', 
                 data: { labels: Object.keys(counts('Fecha')), datasets: [{ data: Object.values(counts('Fecha')), backgroundColor: '#3b82f6' }] }
             });
+            
             charts.chartPillars = new Chart(document.getElementById('chartPillars'), {
                 type: 'doughnut', 
                 data: { labels: Object.keys(counts('Pilar del SIG')), datasets: [{ data: Object.values(counts('Pilar del SIG')), backgroundColor: ['#3b82f6','#10b981','#f59e0b'] }] }
             });
+            
             charts.chartTypes = new Chart(document.getElementById('chartTypes'), {
                 type: 'pie', 
                 data: { labels: Object.keys(counts('Tipo de norma')), datasets: [{ data: Object.values(counts('Tipo de norma')), backgroundColor: ['#8b5cf6','#ef4444'] }] }
