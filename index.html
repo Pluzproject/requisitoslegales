@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Matriz de Requisitos Legales - SIG</title>
     
-    <!-- Librerías Externas -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -18,7 +17,7 @@
             width: 100%; 
         }
         
-        /* Estilos generales de tabla para mantener la estructura clara */
+        /* Estilos generales de tabla */
         th, td { 
             padding: 12px; 
             border-bottom: 1px solid #dbeafe; 
@@ -35,17 +34,24 @@
         tr:hover { 
             background-color: #eff6ff; 
         }
+        
+        /* Espaciado para el contenedor principal */
+        .main-content {
+            max-width: 95%;
+            margin-left: auto;
+            margin-right: auto;
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
     </style>
 </head>
 
 <body class="bg-blue-50 text-blue-900 font-sans min-h-screen">
 
-    <!-- Encabezado del Sistema con Logos -->
     <header class="bg-blue-900 text-white shadow-md py-6 px-8 relative">
         
-        <!-- Logo Izquierdo (Logo versión color blanco.png) -->
         <div class="absolute left-6 top-6">
-            <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAlgAAADIAQMAAAB6QhS8AAAABlBMVEX///8AAABVwtN+AAAAAnRSTlMAAQGU/a4AAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAiSURBVFjD7cExAQAAAMKg9U9tCy8gAAAAAAAAAAAAALg1CwAAAf9+i/YAAXQz4/AAAAAASUVORK5CYII=" alt="Logo Pluz" class="h-10 w-auto opacity-90">
+            <img src="https://raw.githubusercontent.com/Pluzproject/requisitoslegales/main/Logo-SGI-Blanco-1.png" alt="Logo SGI" class="h-10 w-auto opacity-90">
         </div>
 
         <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
@@ -59,15 +65,13 @@
             </button>
         </div>
 
-        <!-- Logo Derecho (Logo-SGI-Blanco-1.png) -->
         <div class="absolute right-6 top-6">
-            <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARoAAAAyCAYAAACw31lMAAAAAXNSR0IArs4c6QAAAHBJREFUeF7t0QENAAAAwqD3T20ON6AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEcBLm8AAa/eGkEAAAAASUVORK5CYII=" alt="Logo SGI" class="h-10 w-auto opacity-90">
+            <img src="https://raw.githubusercontent.com/Pluzproject/requisitoslegales/main/Logo%20versi%C3%B3n%20color%20blanco.png" alt="Logo Pluz" class="h-10 w-auto opacity-90">
         </div>
     </header>
 
-    <main class="max-w-[95%] mx-auto px-4 py-8 space-y-8">
+    <main class="main-content space-y-8">
         
-        <!-- Bloque de 5 Tarjetas KPIs -->
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div class="bg-blue-900 p-6 rounded-xl text-white shadow-lg">
                 <span class="text-xs uppercase opacity-75">Total Normas</span>
@@ -95,7 +99,6 @@
             </div>
         </div>
 
-        <!-- Bloque de Gráficos -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="bg-white p-5 rounded-xl border shadow-sm">
                 <div class="chart-container"><canvas id="chartYears"></canvas></div>
@@ -110,7 +113,6 @@
             </div>
         </div>
 
-        <!-- Bloque de Tabla y Filtros -->
         <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden">
             <div class="p-5 bg-blue-50 border-b flex flex-col md:flex-row gap-4">
                 <input type="text" id="searchInput" placeholder="Buscar..." class="w-full md:w-80 px-4 py-2 border rounded-lg text-sm">
@@ -150,14 +152,14 @@
         let rawData = [];
         let charts = {};
 
-        // Función para decodificar caracteres HTML y evitar errores en texto
+        // Función para decodificar caracteres HTML
         function decodeHtml(html) {
             const txt = document.createElement("textarea");
             txt.innerHTML = html;
             return txt.value;
         }
 
-        // Generador de colores dinámicos únicos para gráficos
+        // Generador de colores dinámicos
         const getColors = (n) => {
             return Array.from({length: n}, (_, i) => `hsl(${(i * 360) / n}, 70%, 60%)`);
         };
@@ -165,9 +167,13 @@
         // --- INICIALIZACIÓN ---
         window.addEventListener('DOMContentLoaded', () => {
             fetchData();
+            
+            // Listeners de los filtros
             document.getElementById('searchInput').addEventListener('input', applyFilters);
             document.getElementById('filterPilar').addEventListener('change', applyFilters);
             document.getElementById('filterTipo').addEventListener('change', applyFilters);
+            
+            // Botón de reseteo
             document.getElementById('btnReset').addEventListener('click', resetDashboard);
         });
 
@@ -182,12 +188,14 @@
                         ...i, 
                         year: (i['Fecha']||'').split('/')[2] || 'N/A'
                     }));
+                    
                     populateDropdowns(rawData);
                     renderAll(rawData);
                 }
             });
         }
 
+        // --- POBLAR DROPDOWNS ---
         function populateDropdowns(data) {
             const pilares = [...new Set(data.map(i => i['Pilar del SIG']).filter(Boolean))];
             const tipos = [...new Set(data.map(i => i['Tipo de norma']).filter(Boolean))];
@@ -207,13 +215,14 @@
             });
         }
 
-        // --- RENDERIZADO DE TABLA Y COMPONENTES ---
+        // --- RENDERIZADO GLOBAL ---
         function renderAll(data) {
             renderTable(data);
             renderKPIs(data);
             updateCharts(data);
         }
 
+        // --- TABLA DE DATOS ---
         function renderTable(data) {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
@@ -240,10 +249,9 @@
             });
         }
 
-        // --- LÓGICA DE KPIs (CONTEO EXACTO A 'INFORMATIVO') ---
+        // --- LÓGICA DE KPIs ---
         function renderKPIs(data) {
             const total = data.length;
-            
             const obli = data.filter(i => (i['Tipo de norma'] || '').toLowerCase().includes('obligatorio')).length;
             const info = data.filter(i => (i['Tipo de norma'] || '').toLowerCase().includes('informativo')).length;
             const refe = data.filter(i => (i['Tipo de norma'] || '').toLowerCase().includes('referencial')).length;
@@ -253,7 +261,7 @@
             document.getElementById('kpi-info').textContent = info;
             document.getElementById('kpi-refe').textContent = refe;
 
-            // Lógica para detectar registros identificados el día anterior
+            // Fecha de ayer para KPIs
             const y = new Date();
             y.setDate(y.getDate() - 1);
             const yStr = `${String(y.getDate()).padStart(2,'0')}/${String(y.getMonth()+1).padStart(2,'0')}/${y.getFullYear()}`;
@@ -269,7 +277,7 @@
             document.getElementById('kpi-ayer-detalle').innerHTML = detalleAyer || 'Ninguna';
         }
 
-        // --- FILTROS Y BÚSQUEDA ---
+        // --- FILTROS ---
         function applyFilters() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const pilar = document.getElementById('filterPilar').value;
@@ -284,6 +292,7 @@
             renderAll(filtered);
         }
 
+        // --- RESET ---
         function resetDashboard() {
             document.getElementById('searchInput').value = '';
             document.getElementById('filterPilar').value = '';
@@ -291,8 +300,9 @@
             renderAll(rawData);
         }
 
-        // --- ACTUALIZACIÓN DE GRÁFICOS ---
+        // --- GRÁFICOS (CHART.JS) ---
         function updateCharts(data) {
+            // Limpiar previos
             ['chartYears', 'chartPillars', 'chartTypes'].forEach(id => { if(charts[id]) charts[id].destroy(); });
             
             const counts = (key) => data.reduce((a, i) => { a[i[key]||'N/A'] = (a[i[key]||'N/A']||0)+1; return a; }, {});
