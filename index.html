@@ -84,6 +84,8 @@
                             <th class="text-xs uppercase">Sumilla / Descripción</th>
                             <th class="text-xs uppercase">Autoridad</th>
                             <th class="text-xs uppercase">Tipo</th>
+                            <th class="text-xs uppercase">Enlace</th>
+                            <th class="text-xs uppercase">Recomendación</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody" class="bg-white divide-y divide-blue-100 text-sm"></tbody>
@@ -93,12 +95,10 @@
     </main>
 
     <script>
-        // Configuración y variables globales
         const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIGndiBxp88Vdkl1NdJ4W63zLqKeotEg8_gBqUMnSz4JHef48eET9R6A265qibhQDbZUUxe5kM-n4L/pub?output=csv';
         let rawData = [];
         let charts = {};
 
-        // Inicialización
         window.addEventListener('DOMContentLoaded', () => {
             fetchData();
             document.getElementById('searchInput').addEventListener('input', applyFilters);
@@ -107,7 +107,6 @@
             document.getElementById('btnReset').addEventListener('click', resetDashboard);
         });
 
-        // Carga de Datos
         function fetchData() {
             Papa.parse(csvUrl, {
                 download: true,
@@ -118,13 +117,10 @@
                     populateDropdowns(rawData);
                     renderAll(rawData);
                 },
-                error: function(err) {
-                    console.error("Error al cargar:", err);
-                }
+                error: function(err) { console.error("Error al cargar:", err); }
             });
         }
 
-        // Población de Selects
         function populateDropdowns(data) {
             const pilares = [...new Set(data.map(i => i['Pilar del SIG']).filter(Boolean))];
             const tipos = [...new Set(data.map(i => i['Tipo de norma']).filter(Boolean))];
@@ -146,14 +142,12 @@
             });
         }
 
-        // Lógica de Renderizado
         function renderAll(data) {
             renderTable(data);
             renderKPIs(data);
             updateCharts(data);
         }
 
-        // Renderizado de Tabla
         function renderTable(data) {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
@@ -166,23 +160,20 @@
                     <td class="text-blue-800">${item['Sumilla / Descripción'] || '-'}</td>
                     <td class="text-blue-600">${item['Autoridad'] || '-'}</td>
                     <td class="text-blue-500">${item['Tipo de norma'] || '-'}</td>
+                    <td>${(item['Enlace'] && item['Enlace'] !== '--') ? `<a href="${item['Enlace']}" target="_blank" class="text-blue-600 underline font-semibold">Ver Norma</a>` : '-'}</td>
+                    <td class="text-gray-700 italic">${item['Recomendación'] || '-'}</td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
-        // Renderizado de KPIs
         function renderKPIs(data) {
             const total = data.length;
             const obligatorias = data.filter(i => i['Tipo de norma'] === 'Obligatorio').length;
             
-            // Lógica para ayer (ajuste manual según fecha actual 25/05/2026)
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
-            const y = yesterday.getFullYear();
-            const m = String(yesterday.getMonth() + 1).padStart(2, '0');
-            const d = String(yesterday.getDate()).padStart(2, '0');
-            const yStr = `${d}/${m}/${y}`;
+            const yStr = `${String(yesterday.getDate()).padStart(2, '0')}/${String(yesterday.getMonth() + 1).padStart(2, '0')}/${yesterday.getFullYear()}`;
             
             const ayer = data.filter(i => (i['Fecha'] || '').trim() === yStr).length;
 
@@ -191,7 +182,6 @@
             document.getElementById('kpi-ayer').textContent = ayer;
         }
 
-        // Lógica de Filtrado
         function applyFilters() {
             const searchVal = document.getElementById('searchInput').value.toLowerCase();
             const pilarVal = document.getElementById('filterPilar').value;
@@ -207,7 +197,6 @@
             renderAll(filtered);
         }
 
-        // Reseteo
         function resetDashboard() {
             document.getElementById('searchInput').value = '';
             document.getElementById('filterPilar').value = '';
@@ -215,7 +204,6 @@
             renderAll(rawData);
         }
 
-        // Gráficos (Chart.js)
         function updateCharts(data) {
             ['chartYears', 'chartPillars', 'chartTypes'].forEach(id => { if(charts[id]) charts[id].destroy(); });
             
