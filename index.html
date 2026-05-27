@@ -12,7 +12,7 @@
     <style>
         .chart-container { 
             position: relative; 
-            height: 240px; 
+            height: 300px; 
             width: 100%; 
         }
         
@@ -52,20 +52,30 @@
 
     <main class="max-w-[95%] mx-auto px-4 py-8 space-y-8">
         
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-5" id="kpi-container">
-            <div class="bg-white p-6 rounded-xl border shadow-sm">
-                <span class="text-xs uppercase font-bold text-blue-400">Total Normas</span>
-                <div class="text-4xl font-bold mt-2 text-blue-900" id="kpi-total">0</div>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div class="bg-blue-900 p-6 rounded-xl text-white shadow-lg">
+                <span class="text-xs uppercase opacity-75">Total Normas</span>
+                <div class="text-5xl font-bold mt-2" id="kpi-total">0</div>
             </div>
             
             <div class="bg-white p-6 rounded-xl border shadow-sm">
-                <span class="text-xs uppercase font-bold text-emerald-500">Normas Obligatorias</span>
-                <div class="text-4xl font-bold mt-2 text-emerald-700" id="kpi-obligatorias">0</div>
+                <span class="text-xs uppercase font-bold text-emerald-600">Obligatorias</span>
+                <div class="text-3xl font-bold mt-2" id="kpi-obli">0</div>
             </div>
             
             <div class="bg-white p-6 rounded-xl border shadow-sm">
-                <span class="text-xs uppercase font-bold text-amber-500">Identificadas Ayer</span>
-                <div class="text-4xl font-bold mt-2 text-amber-700" id="kpi-ayer">0</div>
+                <span class="text-xs uppercase font-bold text-blue-600">Informativas</span>
+                <div class="text-3xl font-bold mt-2" id="kpi-info">0</div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl border shadow-sm">
+                <span class="text-xs uppercase font-bold text-amber-600">Referenciales</span>
+                <div class="text-3xl font-bold mt-2" id="kpi-refe">0</div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl border shadow-sm">
+                <span class="text-xs uppercase font-bold text-purple-600">Identificadas Ayer</span>
+                <div class="text-sm mt-2" id="kpi-ayer-detalle">0</div>
             </div>
         </div>
 
@@ -129,6 +139,11 @@
             return txt.value;
         }
 
+        // Generador de colores dinámicos únicos
+        const getColors = (n) => {
+            return Array.from({length: n}, (_, i) => `hsl(${(i * 360) / n}, 70%, 60%)`);
+        };
+
         // Inicialización principal
         window.addEventListener('DOMContentLoaded', () => {
             fetchData();
@@ -145,12 +160,10 @@
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    rawData = results.data;
-                    // Procesamiento de años
-                    rawData.forEach(i => {
-                        const parts = (i['Fecha']||'').split('/');
-                        i.year = parts.length === 3 ? parts[2] : 'N/A';
-                    });
+                    rawData = results.data.map(i => ({
+                        ...i, 
+                        year: (i['Fecha']||'').split('/')[2] || 'N/A'
+                    }));
                     populateDropdowns(rawData);
                     renderAll(rawData);
                 }
@@ -217,9 +230,19 @@
             y.setDate(y.getDate() - 1);
             const yStr = `${String(y.getDate()).padStart(2,'0')}/${String(y.getMonth()+1).padStart(2,'0')}/${y.getFullYear()}`;
             
+            const ayer = data.filter(i => (i['Fecha']||'').trim() === yStr);
+            const ayerCounts = ayer.reduce((a, i) => {
+                a[i['Tipo de norma']] = (a[i['Tipo de norma']] || 0) + 1;
+                return a;
+            }, {});
+
             document.getElementById('kpi-total').textContent = data.length;
-            document.getElementById('kpi-obligatorias').textContent = data.filter(i => i['Tipo de norma'] === 'Obligatorio').length;
-            document.getElementById('kpi-ayer').textContent = data.filter(i => (i['Fecha']||'').trim() === yStr).length;
+            document.getElementById('kpi-obli').textContent = data.filter(i => i['Tipo de norma'] === 'Obligatorio').length;
+            document.getElementById('kpi-info').textContent = data.filter(i => i['Tipo de norma'] === 'Informativa').length;
+            document.getElementById('kpi-refe').textContent = data.filter(i => i['Tipo de norma'] === 'Referencial').length;
+            
+            const detalleAyer = Object.entries(ayerCounts).map(([k, v]) => `${k}: ${v}`).join('<br>');
+            document.getElementById('kpi-ayer-detalle').innerHTML = detalleAyer || 'Ninguna';
         }
 
         // Lógica de filtrado
@@ -245,7 +268,7 @@
             renderAll(rawData);
         }
 
-        // Actualización de gráficos con las configuraciones personalizadas
+        // Actualización de gráficos
         function updateCharts(data) {
             ['chartYears', 'chartPillars', 'chartTypes'].forEach(id => { if(charts[id]) charts[id].destroy(); });
             
@@ -254,22 +277,39 @@
             // Gráfico 1: Años
             charts.chartYears = new Chart(document.getElementById('chartYears'), {
                 type: 'bar', 
-                data: { labels: Object.keys(counts('year')), datasets: [{ label: 'Normas', data: Object.values(counts('year')), backgroundColor: '#3b82f6' }] },
-                options: { plugins: { title: { display: true, text: 'Años' }, legend: { display: false } } }
+                data: { 
+                    labels: Object.keys(counts('year')), 
+                    datasets: [{ label: 'Normas', data: Object.values(counts('year')), backgroundColor: '#3b82f6' }] 
+                },
+                options: { 
+                    plugins: { title: { display: true, text: 'Años' }, legend: { display: false } } 
+                }
             });
             
             // Gráfico 2: Pilares
+            const pData = counts('Pilar del SIG');
             charts.chartPillars = new Chart(document.getElementById('chartPillars'), {
                 type: 'doughnut', 
-                data: { labels: Object.keys(counts('Pilar del SIG')), datasets: [{ data: Object.values(counts('Pilar del SIG')), backgroundColor: ['#3b82f6','#10b981','#f59e0b'] }] },
-                options: { plugins: { title: { display: true, text: 'Pilares' }, legend: { position: 'right', labels: { font: { size: 10 } } } } }
+                data: { 
+                    labels: Object.keys(pData), 
+                    datasets: [{ data: Object.values(pData), backgroundColor: getColors(Object.keys(pData).length) }] 
+                },
+                options: { 
+                    plugins: { title: { display: true, text: 'Pilares' }, legend: { position: 'right', labels: { font: { size: 10 } } } } 
+                }
             });
             
             // Gráfico 3: Tipos
+            const tData = counts('Tipo de norma');
             charts.chartTypes = new Chart(document.getElementById('chartTypes'), {
-                type: 'pie', 
-                data: { labels: Object.keys(counts('Tipo de norma')), datasets: [{ data: Object.values(counts('Tipo de norma')), backgroundColor: ['#8b5cf6','#ef4444'] }] },
-                options: { plugins: { title: { display: true, text: 'Tipos' }, legend: { position: 'bottom' } } }
+                type: 'doughnut', 
+                data: { 
+                    labels: Object.keys(tData), 
+                    datasets: [{ data: Object.values(tData), backgroundColor: getColors(Object.keys(tData).length) }] 
+                },
+                options: { 
+                    plugins: { title: { display: true, text: 'Tipos' }, legend: { position: 'bottom' } } 
+                }
             });
         }
     </script>
