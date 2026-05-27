@@ -10,7 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     
     <style>
-        /* Contenedor de gráficos con altura fija */
+        /* Contenedor de gráficos con altura fija para mayor visibilidad */
         .chart-container { 
             position: relative; 
             height: 350px; 
@@ -141,7 +141,7 @@
             return txt.value;
         }
 
-        // Generador de colores dinámicos
+        // Generador de colores dinámicos únicos
         const getColors = (n) => {
             return Array.from({length: n}, (_, i) => `hsl(${(i * 360) / n}, 70%, 60%)`);
         };
@@ -224,13 +224,13 @@
             });
         }
 
-        // --- LÓGICA DE KPIs (CON CONTEO BLINDADO) ---
+        // --- LÓGICA DE KPIs (CONTEO CORREGIDO A 'INFORMATIVO') ---
         function renderKPIs(data) {
             const total = data.length;
             
             // Conteo forzado para asegurar que la suma de partes sea igual al total
             const obli = data.filter(i => (i['Tipo de norma'] || '').toLowerCase().includes('obligatorio')).length;
-            const info = data.filter(i => (i['Tipo de norma'] || '').toLowerCase().includes('informativa')).length;
+            const info = data.filter(i => (i['Tipo de norma'] || '').toLowerCase().includes('informativo')).length; // CORREGIDO
             const refe = data.filter(i => (i['Tipo de norma'] || '').toLowerCase().includes('referencial')).length;
             
             document.getElementById('kpi-total').textContent = total;
