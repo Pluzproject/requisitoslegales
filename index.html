@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matriz de Requisitos Legales - SIG</title>
+    <title>Portal de Requisitos Legales</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -17,7 +17,7 @@
             width: 100%; 
         }
         
-        /* Estilos generales de tabla */
+        /* Estilos de tabla detallados */
         th, td { 
             padding: 12px; 
             border-bottom: 1px solid #dbeafe; 
@@ -34,14 +34,17 @@
         tr:hover { 
             background-color: #eff6ff; 
         }
-        
-        /* Espaciado para el contenedor principal */
-        .main-content {
+
+        /* Estructura principal del documento */
+        .main-container {
             max-width: 95%;
-            margin-left: auto;
-            margin-right: auto;
-            padding-top: 2rem;
-            padding-bottom: 2rem;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        /* Ajuste de márgenes para elementos del encabezado */
+        .header-spacer {
+            height: 80px;
         }
     </style>
 </head>
@@ -54,15 +57,8 @@
             <img src="https://raw.githubusercontent.com/Pluzproject/requisitoslegales/main/Logo-SGI-Blanco-1.png" alt="Logo SGI" class="h-10 w-auto opacity-90">
         </div>
 
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="text-center">
-                <h1 class="text-2xl font-bold tracking-tight">Matriz de Requisitos Legales</h1>
-                <p class="text-blue-300 text-sm mt-1">Sistemas Integrados de Gestión (SIG)</p>
-            </div>
-            
-            <button id="btnReset" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white font-bold text-sm transition">
-                BORRAR FILTROS
-            </button>
+        <div class="flex justify-center items-center">
+            <h1 class="text-3xl font-bold tracking-tight">Portal de Requisitos Legales</h1>
         </div>
 
         <div class="absolute right-6 top-6">
@@ -70,7 +66,7 @@
         </div>
     </header>
 
-    <main class="main-content space-y-8">
+    <main class="main-container space-y-8">
         
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div class="bg-blue-900 p-6 rounded-xl text-white shadow-lg">
@@ -114,7 +110,8 @@
         </div>
 
         <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden">
-            <div class="p-5 bg-blue-50 border-b flex flex-col md:flex-row gap-4">
+            
+            <div class="p-5 bg-blue-50 border-b flex flex-wrap gap-4 items-center">
                 <input type="text" id="searchInput" placeholder="Buscar..." class="w-full md:w-80 px-4 py-2 border rounded-lg text-sm">
                 
                 <select id="filterPilar" class="border rounded-lg text-sm px-3 py-2">
@@ -124,6 +121,10 @@
                 <select id="filterTipo" class="border rounded-lg text-sm px-3 py-2">
                     <option value="">Todos los Tipos</option>
                 </select>
+
+                <button id="btnReset" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white font-bold text-sm transition">
+                    BORRAR FILTROS
+                </button>
             </div>
             
             <div class="overflow-x-auto">
@@ -159,35 +160,44 @@
             return txt.value;
         }
 
-        // Generador de colores dinámicos
-        const getColors = (n) => {
-            return Array.from({length: n}, (_, i) => `hsl(${(i * 360) / n}, 70%, 60%)`);
-        };
+        // Generador de colores para los gráficos
+        function getColors(n) {
+            const colors = [];
+            for(let i = 0; i < n; i++) {
+                colors.push(`hsl(${(i * 360) / n}, 70%, 60%)`);
+            }
+            return colors;
+        }
 
-        // --- INICIALIZACIÓN ---
-        window.addEventListener('DOMContentLoaded', () => {
+        // --- INICIALIZACIÓN DE EVENTOS ---
+        window.addEventListener('DOMContentLoaded', function() {
             fetchData();
             
-            // Listeners de los filtros
-            document.getElementById('searchInput').addEventListener('input', applyFilters);
-            document.getElementById('filterPilar').addEventListener('change', applyFilters);
-            document.getElementById('filterTipo').addEventListener('change', applyFilters);
+            // Asignación de eventos a elementos
+            const searchBox = document.getElementById('searchInput');
+            const pilarFilter = document.getElementById('filterPilar');
+            const tipoFilter = document.getElementById('filterTipo');
+            const btnReset = document.getElementById('btnReset');
             
-            // Botón de reseteo
-            document.getElementById('btnReset').addEventListener('click', resetDashboard);
+            searchBox.addEventListener('input', applyFilters);
+            pilarFilter.addEventListener('change', applyFilters);
+            tipoFilter.addEventListener('change', applyFilters);
+            btnReset.addEventListener('click', resetDashboard);
         });
 
-        // --- CARGA Y PROCESAMIENTO DE DATOS ---
+        // --- CARGA DE DATOS ---
         function fetchData() {
             Papa.parse(csvUrl, {
                 download: true,
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    rawData = results.data.map(i => ({
-                        ...i, 
-                        year: (i['Fecha']||'').split('/')[2] || 'N/A'
-                    }));
+                    rawData = results.data.map(function(item) {
+                        return {
+                            ...item, 
+                            year: (item['Fecha']||'').split('/')[2] || 'N/A'
+                        };
+                    });
                     
                     populateDropdowns(rawData);
                     renderAll(rawData);
@@ -195,39 +205,45 @@
             });
         }
 
-        // --- POBLAR DROPDOWNS ---
+        // --- POBLADO DE FILTROS ---
         function populateDropdowns(data) {
+            const pilarSelect = document.getElementById('filterPilar');
+            const tipoSelect = document.getElementById('filterTipo');
+            
             const pilares = [...new Set(data.map(i => i['Pilar del SIG']).filter(Boolean))];
             const tipos = [...new Set(data.map(i => i['Tipo de norma']).filter(Boolean))];
             
-            pilares.forEach(p => {
+            for(let i = 0; i < pilares.length; i++) {
                 let opt = document.createElement('option');
-                opt.value = p;
-                opt.textContent = p;
-                document.getElementById('filterPilar').appendChild(opt);
-            });
+                opt.value = pilares[i];
+                opt.textContent = pilares[i];
+                pilarSelect.appendChild(opt);
+            }
             
-            tipos.forEach(t => {
+            for(let i = 0; i < tipos.length; i++) {
                 let opt = document.createElement('option');
-                opt.value = t;
-                opt.textContent = t;
-                document.getElementById('filterTipo').appendChild(opt);
-            });
+                opt.value = tipos[i];
+                opt.textContent = tipos[i];
+                tipoSelect.appendChild(opt);
+            }
         }
 
-        // --- RENDERIZADO GLOBAL ---
+        // --- RENDERIZADO PRINCIPAL ---
         function renderAll(data) {
             renderTable(data);
             renderKPIs(data);
             updateCharts(data);
         }
 
-        // --- TABLA DE DATOS ---
+        // --- TABLA DETALLADA ---
         function renderTable(data) {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             
-            [...data].reverse().forEach(item => {
+            const reversedData = [...data].reverse();
+            
+            for(let i = 0; i < reversedData.length; i++) {
+                const item = reversedData[i];
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-blue-50";
                 
@@ -246,10 +262,10 @@
                     <td class="whitespace-normal italic font-medium text-gray-700 text-xs">${decodeHtml(item['Recomendación'] || '-')}</td>
                 `;
                 tbody.appendChild(tr);
-            });
+            }
         }
 
-        // --- LÓGICA DE KPIs ---
+        // --- KPIs DE GESTIÓN ---
         function renderKPIs(data) {
             const total = data.length;
             const obli = data.filter(i => (i['Tipo de norma'] || '').toLowerCase().includes('obligatorio')).length;
@@ -261,7 +277,6 @@
             document.getElementById('kpi-info').textContent = info;
             document.getElementById('kpi-refe').textContent = refe;
 
-            // Fecha de ayer para KPIs
             const y = new Date();
             y.setDate(y.getDate() - 1);
             const yStr = `${String(y.getDate()).padStart(2,'0')}/${String(y.getMonth()+1).padStart(2,'0')}/${y.getFullYear()}`;
@@ -273,17 +288,17 @@
                 return a; 
             }, {});
             
-            const detalleAyer = Object.entries(aCounts).map(([k, v]) => `${k}: ${v}`).join('<br>');
-            document.getElementById('kpi-ayer-detalle').innerHTML = detalleAyer || 'Ninguna';
+            const detalle = Object.entries(aCounts).map(([k, v]) => `${k}: ${v}`).join('<br>');
+            document.getElementById('kpi-ayer-detalle').innerHTML = detalle || 'Ninguna';
         }
 
-        // --- FILTROS ---
+        // --- LÓGICA DE FILTROS ---
         function applyFilters() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const pilar = document.getElementById('filterPilar').value;
             const tipo = document.getElementById('filterTipo').value;
             
-            const filtered = rawData.filter(i => {
+            const filtered = rawData.filter(function(i) {
                 const matchSearch = (i['Norma']||'').toLowerCase().includes(search) || (i['Sumilla / Descripción']||'').toLowerCase().includes(search);
                 const matchPilar = !pilar || i['Pilar del SIG'] === pilar;
                 const matchTipo = !tipo || i['Tipo de norma'] === tipo;
@@ -292,7 +307,6 @@
             renderAll(filtered);
         }
 
-        // --- RESET ---
         function resetDashboard() {
             document.getElementById('searchInput').value = '';
             document.getElementById('filterPilar').value = '';
@@ -300,49 +314,48 @@
             renderAll(rawData);
         }
 
-        // --- GRÁFICOS (CHART.JS) ---
+        // --- ACTUALIZACIÓN DE GRÁFICOS ---
         function updateCharts(data) {
-            // Limpiar previos
-            ['chartYears', 'chartPillars', 'chartTypes'].forEach(id => { if(charts[id]) charts[id].destroy(); });
+            // Destruir gráficos anteriores
+            if(charts.chartYears) charts.chartYears.destroy();
+            if(charts.chartPillars) charts.chartPillars.destroy();
+            if(charts.chartTypes) charts.chartTypes.destroy();
             
-            const counts = (key) => data.reduce((a, i) => { a[i[key]||'N/A'] = (a[i[key]||'N/A']||0)+1; return a; }, {});
+            const countData = function(key) {
+                return data.reduce((a, i) => { a[i[key]||'N/A'] = (a[i[key]||'N/A']||0)+1; return a; }, {});
+            };
             
-            // Gráfico 1: Años
+            // Gráfico de Años
+            const years = countData('year');
             charts.chartYears = new Chart(document.getElementById('chartYears'), {
                 type: 'bar', 
                 data: { 
-                    labels: Object.keys(counts('year')), 
-                    datasets: [{ label: 'Normas', data: Object.values(counts('year')), backgroundColor: '#3b82f6' }] 
+                    labels: Object.keys(years), 
+                    datasets: [{ label: 'Normas', data: Object.values(years), backgroundColor: '#3b82f6' }] 
                 },
-                options: { 
-                    plugins: { title: { display: true, text: 'Años' }, legend: { display: false } } 
-                }
+                options: { plugins: { title: { display: true, text: 'Evolución Anual' } } }
             });
             
-            // Gráfico 2: Pilares
-            const pData = counts('Pilar del SIG');
+            // Gráfico de Pilares
+            const pillars = countData('Pilar del SIG');
             charts.chartPillars = new Chart(document.getElementById('chartPillars'), {
                 type: 'doughnut', 
                 data: { 
-                    labels: Object.keys(pData), 
-                    datasets: [{ data: Object.values(pData), backgroundColor: getColors(Object.keys(pData).length) }] 
+                    labels: Object.keys(pillars), 
+                    datasets: [{ data: Object.values(pillars), backgroundColor: getColors(Object.keys(pillars).length) }] 
                 },
-                options: { 
-                    plugins: { title: { display: true, text: 'Pilares' }, legend: { position: 'right', labels: { font: { size: 10 } } } } 
-                }
+                options: { plugins: { title: { display: true, text: 'Distribución por Pilares' } } }
             });
             
-            // Gráfico 3: Tipos
-            const tData = counts('Tipo de norma');
+            // Gráfico de Tipos
+            const types = countData('Tipo de norma');
             charts.chartTypes = new Chart(document.getElementById('chartTypes'), {
                 type: 'doughnut', 
                 data: { 
-                    labels: Object.keys(tData), 
-                    datasets: [{ data: Object.values(tData), backgroundColor: getColors(Object.keys(tData).length) }] 
+                    labels: Object.keys(types), 
+                    datasets: [{ data: Object.values(types), backgroundColor: getColors(Object.keys(types).length) }] 
                 },
-                options: { 
-                    plugins: { title: { display: true, text: 'Tipos' }, legend: { position: 'bottom' } } 
-                }
+                options: { plugins: { title: { display: true, text: 'Distribución por Tipos' } } }
             });
         }
     </script>
