@@ -75,17 +75,17 @@
                 </select>
             </div>
             <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
-                <table class="min-w-full divide-y divide-blue-200">
+                <table class="min-w-full divide-y divide-blue-200 table-fixed">
                     <thead class="bg-blue-50 sticky top-0 z-10">
                         <tr>
-                            <th class="text-xs uppercase">Fecha</th>
-                            <th class="text-xs uppercase">Norma</th>
-                            <th class="text-xs uppercase">Pilar</th>
-                            <th class="text-xs uppercase">Sumilla / Descripción</th>
-                            <th class="text-xs uppercase">Autoridad</th>
-                            <th class="text-xs uppercase">Tipo</th>
-                            <th class="text-xs uppercase">Enlace</th>
-                            <th class="text-xs uppercase">Recomendación</th>
+                            <th class="text-xs uppercase w-20">Fecha</th>
+                            <th class="text-xs uppercase w-40">Norma</th>
+                            <th class="text-xs uppercase w-32">Pilar</th>
+                            <th class="text-xs uppercase w-64">Sumilla / Descripción</th>
+                            <th class="text-xs uppercase w-32">Autoridad</th>
+                            <th class="text-xs uppercase w-24">Tipo</th>
+                            <th class="text-xs uppercase w-24">Enlace</th>
+                            <th class="text-xs uppercase w-80">Recomendación</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody" class="bg-white divide-y divide-blue-100 text-sm"></tbody>
@@ -95,19 +95,16 @@
     </main>
 
     <script>
-        // Configuración y variables globales
         const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIGndiBxp88Vdkl1NdJ4W63zLqKeotEg8_gBqUMnSz4JHef48eET9R6A265qibhQDbZUUxe5kM-n4L/pub?output=csv';
         let rawData = [];
         let charts = {};
 
-        // Función para corregir tildes y caracteres especiales
         function decodeHtml(html) {
             const txt = document.createElement("textarea");
             txt.innerHTML = html;
             return txt.value;
         }
 
-        // Inicialización
         window.addEventListener('DOMContentLoaded', () => {
             fetchData();
             document.getElementById('searchInput').addEventListener('input', applyFilters);
@@ -116,7 +113,6 @@
             document.getElementById('btnReset').addEventListener('click', resetDashboard);
         });
 
-        // Carga de Datos
         function fetchData() {
             Papa.parse(csvUrl, {
                 download: true,
@@ -131,7 +127,6 @@
             });
         }
 
-        // Población de Selects
         function populateDropdowns(data) {
             const pilares = [...new Set(data.map(i => i['Pilar del SIG']).filter(Boolean))];
             const tipos = [...new Set(data.map(i => i['Tipo de norma']).filter(Boolean))];
@@ -153,34 +148,31 @@
             });
         }
 
-        // Lógica de Renderizado
         function renderAll(data) {
             renderTable(data);
             renderKPIs(data);
             updateCharts(data);
         }
 
-        // Renderizado de Tabla (Completo con decodificación)
         function renderTable(data) {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             [...data].reverse().forEach(item => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td class="text-blue-500">${item['Fecha'] || '-'}</td>
-                    <td class="font-bold text-blue-900">${decodeHtml(item['Norma'] || '-')}</td>
+                    <td class="text-blue-500 truncate">${item['Fecha'] || '-'}</td>
+                    <td class="font-bold text-blue-900 truncate">${decodeHtml(item['Norma'] || '-')}</td>
                     <td><span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-bold">${item['Pilar del SIG'] || '-'}</span></td>
-                    <td class="text-blue-800">${decodeHtml(item['Sumilla / Descripción'] || '-')}</td>
-                    <td class="text-blue-600">${decodeHtml(item['Autoridad'] || '-')}</td>
-                    <td class="text-blue-500">${item['Tipo de norma'] || '-'}</td>
-                    <td>${(item['Enlace'] && item['Enlace'] !== '--') ? `<a href="${item['Enlace']}" target="_blank" class="text-blue-600 underline font-semibold">Ver Norma</a>` : '-'}</td>
-                    <td class="text-gray-700 italic">${decodeHtml(item['Recomendación'] || '-')}</td>
+                    <td class="text-blue-800 text-xs">${decodeHtml(item['Sumilla / Descripción'] || '-')}</td>
+                    <td class="text-blue-600 truncate">${decodeHtml(item['Autoridad'] || '-')}</td>
+                    <td class="text-blue-500 truncate">${item['Tipo de norma'] || '-'}</td>
+                    <td>${(item['Enlace'] && item['Enlace'] !== '--') ? `<a href="${item['Enlace']}" target="_blank" class="text-blue-600 underline font-semibold">Ver</a>` : '-'}</td>
+                    <td class="text-gray-700 italic text-xs">${decodeHtml(item['Recomendación'] || '-')}</td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
-        // Renderizado de KPIs (Con lógica de fecha ayer)
         function renderKPIs(data) {
             const total = data.length;
             const obligatorias = data.filter(i => i['Tipo de norma'] === 'Obligatorio').length;
@@ -196,7 +188,6 @@
             document.getElementById('kpi-ayer').textContent = ayer;
         }
 
-        // Lógica de Filtrado
         function applyFilters() {
             const searchVal = document.getElementById('searchInput').value.toLowerCase();
             const pilarVal = document.getElementById('filterPilar').value;
@@ -212,7 +203,6 @@
             renderAll(filtered);
         }
 
-        // Reseteo
         function resetDashboard() {
             document.getElementById('searchInput').value = '';
             document.getElementById('filterPilar').value = '';
@@ -220,7 +210,6 @@
             renderAll(rawData);
         }
 
-        // Gráficos (Chart.js)
         function updateCharts(data) {
             ['chartYears', 'chartPillars', 'chartTypes'].forEach(id => { if(charts[id]) charts[id].destroy(); });
             
