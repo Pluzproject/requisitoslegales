@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Matriz de Requisitos Legales - SIG</title>
     
+    <!-- Librerías Externas -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -17,7 +18,7 @@
             width: 100%; 
         }
         
-        /* Estilos generales de tabla */
+        /* Estilos generales de tabla para mantener la estructura clara */
         th, td { 
             padding: 12px; 
             border-bottom: 1px solid #dbeafe; 
@@ -39,9 +40,16 @@
 
 <body class="bg-blue-50 text-blue-900 font-sans min-h-screen">
 
-    <header class="bg-blue-900 text-white shadow-md py-6 px-8">
+    <!-- Encabezado del Sistema con Logos -->
+    <header class="bg-blue-900 text-white shadow-md py-6 px-8 relative">
+        
+        <!-- Logo Izquierdo (Logo versión color blanco.png) -->
+        <div class="absolute left-6 top-6">
+            <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAlgAAADIAQMAAAB6QhS8AAAABlBMVEX///8AAABVwtN+AAAAAnRSTlMAAQGU/a4AAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAiSURBVFjD7cExAQAAAMKg9U9tCy8gAAAAAAAAAAAAALg1CwAAAf9+i/YAAXQz4/AAAAAASUVORK5CYII=" alt="Logo Pluz" class="h-10 w-auto opacity-90">
+        </div>
+
         <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-            <div>
+            <div class="text-center">
                 <h1 class="text-2xl font-bold tracking-tight">Matriz de Requisitos Legales</h1>
                 <p class="text-blue-300 text-sm mt-1">Sistemas Integrados de Gestión (SIG)</p>
             </div>
@@ -50,10 +58,16 @@
                 BORRAR FILTROS
             </button>
         </div>
+
+        <!-- Logo Derecho (Logo-SGI-Blanco-1.png) -->
+        <div class="absolute right-6 top-6">
+            <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARoAAAAyCAYAAACw31lMAAAAAXNSR0IArs4c6QAAAHBJREFUeF7t0QENAAAAwqD3T20ON6AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEcBLm8AAa/eGkEAAAAASUVORK5CYII=" alt="Logo SGI" class="h-10 w-auto opacity-90">
+        </div>
     </header>
 
     <main class="max-w-[95%] mx-auto px-4 py-8 space-y-8">
         
+        <!-- Bloque de 5 Tarjetas KPIs -->
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div class="bg-blue-900 p-6 rounded-xl text-white shadow-lg">
                 <span class="text-xs uppercase opacity-75">Total Normas</span>
@@ -81,6 +95,7 @@
             </div>
         </div>
 
+        <!-- Bloque de Gráficos -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="bg-white p-5 rounded-xl border shadow-sm">
                 <div class="chart-container"><canvas id="chartYears"></canvas></div>
@@ -95,6 +110,7 @@
             </div>
         </div>
 
+        <!-- Bloque de Tabla y Filtros -->
         <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden">
             <div class="p-5 bg-blue-50 border-b flex flex-col md:flex-row gap-4">
                 <input type="text" id="searchInput" placeholder="Buscar..." class="w-full md:w-80 px-4 py-2 border rounded-lg text-sm">
@@ -134,14 +150,14 @@
         let rawData = [];
         let charts = {};
 
-        // Función para decodificar caracteres HTML
+        // Función para decodificar caracteres HTML y evitar errores en texto
         function decodeHtml(html) {
             const txt = document.createElement("textarea");
             txt.innerHTML = html;
             return txt.value;
         }
 
-        // Generador de colores dinámicos únicos
+        // Generador de colores dinámicos únicos para gráficos
         const getColors = (n) => {
             return Array.from({length: n}, (_, i) => `hsl(${(i * 360) / n}, 70%, 60%)`);
         };
@@ -191,7 +207,7 @@
             });
         }
 
-        // --- RENDERIZADO ---
+        // --- RENDERIZADO DE TABLA Y COMPONENTES ---
         function renderAll(data) {
             renderTable(data);
             renderKPIs(data);
@@ -224,13 +240,12 @@
             });
         }
 
-        // --- LÓGICA DE KPIs (CONTEO CORREGIDO A 'INFORMATIVO') ---
+        // --- LÓGICA DE KPIs (CONTEO EXACTO A 'INFORMATIVO') ---
         function renderKPIs(data) {
             const total = data.length;
             
-            // Conteo forzado para asegurar que la suma de partes sea igual al total
             const obli = data.filter(i => (i['Tipo de norma'] || '').toLowerCase().includes('obligatorio')).length;
-            const info = data.filter(i => (i['Tipo de norma'] || '').toLowerCase().includes('informativo')).length; // CORREGIDO
+            const info = data.filter(i => (i['Tipo de norma'] || '').toLowerCase().includes('informativo')).length;
             const refe = data.filter(i => (i['Tipo de norma'] || '').toLowerCase().includes('referencial')).length;
             
             document.getElementById('kpi-total').textContent = total;
@@ -238,7 +253,7 @@
             document.getElementById('kpi-info').textContent = info;
             document.getElementById('kpi-refe').textContent = refe;
 
-            // Detalle de Ayer
+            // Lógica para detectar registros identificados el día anterior
             const y = new Date();
             y.setDate(y.getDate() - 1);
             const yStr = `${String(y.getDate()).padStart(2,'0')}/${String(y.getMonth()+1).padStart(2,'0')}/${y.getFullYear()}`;
