@@ -146,6 +146,11 @@
                 skipEmptyLines: true,
                 complete: function(results) {
                     rawData = results.data;
+                    // Procesamiento de años
+                    rawData.forEach(i => {
+                        const parts = (i['Fecha']||'').split('/');
+                        i.year = parts.length === 3 ? parts[2] : 'N/A';
+                    });
                     populateDropdowns(rawData);
                     renderAll(rawData);
                 }
@@ -240,25 +245,31 @@
             renderAll(rawData);
         }
 
-        // Actualización de gráficos Chart.js
+        // Actualización de gráficos con las configuraciones personalizadas
         function updateCharts(data) {
             ['chartYears', 'chartPillars', 'chartTypes'].forEach(id => { if(charts[id]) charts[id].destroy(); });
             
             const counts = (key) => data.reduce((a, i) => { a[i[key]||'N/A'] = (a[i[key]||'N/A']||0)+1; return a; }, {});
             
+            // Gráfico 1: Años
             charts.chartYears = new Chart(document.getElementById('chartYears'), {
                 type: 'bar', 
-                data: { labels: Object.keys(counts('Fecha')), datasets: [{ data: Object.values(counts('Fecha')), backgroundColor: '#3b82f6' }] }
+                data: { labels: Object.keys(counts('year')), datasets: [{ label: 'Normas', data: Object.values(counts('year')), backgroundColor: '#3b82f6' }] },
+                options: { plugins: { title: { display: true, text: 'Años' }, legend: { display: false } } }
             });
             
+            // Gráfico 2: Pilares
             charts.chartPillars = new Chart(document.getElementById('chartPillars'), {
                 type: 'doughnut', 
-                data: { labels: Object.keys(counts('Pilar del SIG')), datasets: [{ data: Object.values(counts('Pilar del SIG')), backgroundColor: ['#3b82f6','#10b981','#f59e0b'] }] }
+                data: { labels: Object.keys(counts('Pilar del SIG')), datasets: [{ data: Object.values(counts('Pilar del SIG')), backgroundColor: ['#3b82f6','#10b981','#f59e0b'] }] },
+                options: { plugins: { title: { display: true, text: 'Pilares' }, legend: { position: 'right', labels: { font: { size: 10 } } } } }
             });
             
+            // Gráfico 3: Tipos
             charts.chartTypes = new Chart(document.getElementById('chartTypes'), {
                 type: 'pie', 
-                data: { labels: Object.keys(counts('Tipo de norma')), datasets: [{ data: Object.values(counts('Tipo de norma')), backgroundColor: ['#8b5cf6','#ef4444'] }] }
+                data: { labels: Object.keys(counts('Tipo de norma')), datasets: [{ data: Object.values(counts('Tipo de norma')), backgroundColor: ['#8b5cf6','#ef4444'] }] },
+                options: { plugins: { title: { display: true, text: 'Tipos' }, legend: { position: 'bottom' } } }
             });
         }
     </script>
