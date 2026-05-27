@@ -8,16 +8,17 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     
     <style>
-        /* Contenedor de gráficos con altura fija para mayor visibilidad */
+        /* Contenedor de gráficos con altura fija */
         .chart-container { 
             position: relative; 
             height: 350px; 
             width: 100%; 
         }
         
-        /* Estilos de tabla detallados */
+        /* Estilos detallados de tabla */
         th, td { 
             padding: 12px; 
             border-bottom: 1px solid #dbeafe; 
@@ -35,16 +36,17 @@
             background-color: #eff6ff; 
         }
 
-        /* Estructura principal del documento */
+        /* Contenedor principal con espaciado */
         .main-container {
             max-width: 95%;
             margin: 0 auto;
             padding: 2rem 1rem;
         }
 
-        /* Ajuste de márgenes para elementos del encabezado */
-        .header-spacer {
-            height: 80px;
+        /* Separadores para mantener la estructura clara */
+        .separator {
+            margin-top: 2rem;
+            margin-bottom: 2rem;
         }
     </style>
 </head>
@@ -69,6 +71,7 @@
     <main class="main-container space-y-8">
         
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            
             <div class="bg-blue-900 p-6 rounded-xl text-white shadow-lg">
                 <span class="text-xs uppercase opacity-75">Total Normas</span>
                 <div class="text-5xl font-bold mt-2" id="kpi-total">0</div>
@@ -148,19 +151,21 @@
     </main>
 
     <script>
-        // --- CONFIGURACIÓN Y VARIABLES GLOBALES ---
+        // Registrar plugin de etiquetas para Chart.js
+        Chart.register(ChartDataLabels);
+
+        // --- VARIABLES GLOBALES ---
         const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIGndiBxp88Vdkl1NdJ4W63zLqKeotEg8_gBqUMnSz4JHef48eET9R6A265qibhQDbZUUxe5kM-n4L/pub?output=csv';
         let rawData = [];
         let charts = {};
 
-        // Función para decodificar caracteres HTML
+        // --- FUNCIONES UTILITARIAS ---
         function decodeHtml(html) {
             const txt = document.createElement("textarea");
             txt.innerHTML = html;
             return txt.value;
         }
 
-        // Generador de colores para los gráficos
         function getColors(n) {
             const colors = [];
             for(let i = 0; i < n; i++) {
@@ -169,23 +174,18 @@
             return colors;
         }
 
-        // --- INICIALIZACIÓN DE EVENTOS ---
+        // --- INICIALIZACIÓN ---
         window.addEventListener('DOMContentLoaded', function() {
             fetchData();
             
-            // Asignación de eventos a elementos
-            const searchBox = document.getElementById('searchInput');
-            const pilarFilter = document.getElementById('filterPilar');
-            const tipoFilter = document.getElementById('filterTipo');
-            const btnReset = document.getElementById('btnReset');
-            
-            searchBox.addEventListener('input', applyFilters);
-            pilarFilter.addEventListener('change', applyFilters);
-            tipoFilter.addEventListener('change', applyFilters);
-            btnReset.addEventListener('click', resetDashboard);
+            // Listeners
+            document.getElementById('searchInput').addEventListener('input', applyFilters);
+            document.getElementById('filterPilar').addEventListener('change', applyFilters);
+            document.getElementById('filterTipo').addEventListener('change', applyFilters);
+            document.getElementById('btnReset').addEventListener('click', resetDashboard);
         });
 
-        // --- CARGA DE DATOS ---
+        // --- LÓGICA DE DATOS ---
         function fetchData() {
             Papa.parse(csvUrl, {
                 download: true,
@@ -205,7 +205,6 @@
             });
         }
 
-        // --- POBLADO DE FILTROS ---
         function populateDropdowns(data) {
             const pilarSelect = document.getElementById('filterPilar');
             const tipoSelect = document.getElementById('filterTipo');
@@ -228,14 +227,13 @@
             }
         }
 
-        // --- RENDERIZADO PRINCIPAL ---
+        // --- RENDERIZADO Y KPIs ---
         function renderAll(data) {
             renderTable(data);
             renderKPIs(data);
             updateCharts(data);
         }
 
-        // --- TABLA DETALLADA ---
         function renderTable(data) {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
@@ -247,6 +245,7 @@
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-blue-50";
                 
+                // Construcción manual de celdas para asegurar extensión
                 tr.innerHTML = `
                     <td class="whitespace-nowrap">${item['Fecha'] || '-'}</td>
                     <td class="font-bold">${decodeHtml(item['Norma'] || '-')}</td>
@@ -265,7 +264,6 @@
             }
         }
 
-        // --- KPIs DE GESTIÓN ---
         function renderKPIs(data) {
             const total = data.length;
             const obli = data.filter(i => (i['Tipo de norma'] || '').toLowerCase().includes('obligatorio')).length;
@@ -277,6 +275,7 @@
             document.getElementById('kpi-info').textContent = info;
             document.getElementById('kpi-refe').textContent = refe;
 
+            // Lógica para fecha de ayer
             const y = new Date();
             y.setDate(y.getDate() - 1);
             const yStr = `${String(y.getDate()).padStart(2,'0')}/${String(y.getMonth()+1).padStart(2,'0')}/${y.getFullYear()}`;
@@ -292,7 +291,7 @@
             document.getElementById('kpi-ayer-detalle').innerHTML = detalle || 'Ninguna';
         }
 
-        // --- LÓGICA DE FILTROS ---
+        // --- FILTROS ---
         function applyFilters() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const pilar = document.getElementById('filterPilar').value;
@@ -314,49 +313,64 @@
             renderAll(rawData);
         }
 
-        // --- ACTUALIZACIÓN DE GRÁFICOS ---
+        // --- GRÁFICOS ---
         function updateCharts(data) {
             // Destruir gráficos anteriores
             if(charts.chartYears) charts.chartYears.destroy();
             if(charts.chartPillars) charts.chartPillars.destroy();
             if(charts.chartTypes) charts.chartTypes.destroy();
             
-            const countData = function(key) {
-                return data.reduce((a, i) => { a[i[key]||'N/A'] = (a[i[key]||'N/A']||0)+1; return a; }, {});
-            };
+            // Función auxiliar de conteo
+            function getCounts(key) {
+                return data.reduce((a, i) => { 
+                    a[i[key]||'N/A'] = (a[i[key]||'N/A']||0)+1; 
+                    return a; 
+                }, {});
+            }
             
-            // Gráfico de Años
-            const years = countData('year');
+            // Gráfico 1: Años (Barra)
+            const yData = getCounts('year');
             charts.chartYears = new Chart(document.getElementById('chartYears'), {
                 type: 'bar', 
                 data: { 
-                    labels: Object.keys(years), 
-                    datasets: [{ label: 'Normas', data: Object.values(years), backgroundColor: '#3b82f6' }] 
+                    labels: Object.keys(yData), 
+                    datasets: [{ label: 'Normas', data: Object.values(yData), backgroundColor: '#3b82f6' }] 
                 },
                 options: { plugins: { title: { display: true, text: 'Evolución Anual' } } }
             });
             
-            // Gráfico de Pilares
-            const pillars = countData('Pilar del SIG');
-            charts.chartPillars = new Chart(document.getElementById('chartPillars'), {
-                type: 'doughnut', 
-                data: { 
-                    labels: Object.keys(pillars), 
-                    datasets: [{ data: Object.values(pillars), backgroundColor: getColors(Object.keys(pillars).length) }] 
-                },
-                options: { plugins: { title: { display: true, text: 'Distribución por Pilares' } } }
-            });
-            
-            // Gráfico de Tipos
-            const types = countData('Tipo de norma');
-            charts.chartTypes = new Chart(document.getElementById('chartTypes'), {
-                type: 'doughnut', 
-                data: { 
-                    labels: Object.keys(types), 
-                    datasets: [{ data: Object.values(types), backgroundColor: getColors(Object.keys(types).length) }] 
-                },
-                options: { plugins: { title: { display: true, text: 'Distribución por Tipos' } } }
-            });
+            // Función constructora para Anillos
+            function createDoughnutChart(canvasId, dataObj, titleText) {
+                return new Chart(document.getElementById(canvasId), {
+                    type: 'doughnut',
+                    data: { 
+                        labels: Object.keys(dataObj), 
+                        datasets: [{ 
+                            data: Object.values(dataObj), 
+                            backgroundColor: getColors(Object.keys(dataObj).length) 
+                        }] 
+                    },
+                    options: {
+                        plugins: {
+                            title: { display: true, text: titleText },
+                            datalabels: {
+                                formatter: function(value, context) {
+                                    const dataset = context.dataset.data;
+                                    const sum = dataset.reduce(function(a, b) { return a + b; }, 0);
+                                    const percentage = ((value * 100) / sum).toFixed(1) + "%";
+                                    return value + "\n(" + percentage + ")";
+                                },
+                                color: '#000',
+                                font: { weight: 'bold' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Renderizar anillos
+            charts.chartPillars = createDoughnutChart('chartPillars', getCounts('Pilar del SIG'), 'Distribución por Pilares');
+            charts.chartTypes = createDoughnutChart('chartTypes', getCounts('Tipo de norma'), 'Distribución por Tipos');
         }
     </script>
 </body>
