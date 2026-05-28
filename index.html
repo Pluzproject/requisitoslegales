@@ -42,10 +42,6 @@
             margin: 0 auto;
             padding: 2rem 1rem;
         }
-
-        /* Bloques de margen para asegurar longitud de código */
-        .margin-block-a { margin-top: 2rem; }
-        .margin-block-b { margin-bottom: 2rem; }
     </style>
 </head>
 
@@ -68,7 +64,7 @@
 
     <main class="main-container space-y-8">
         
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             
             <div class="bg-blue-900 p-6 rounded-xl text-white shadow-lg">
                 <span class="text-xs uppercase opacity-75">Total Normas</span>
@@ -88,11 +84,6 @@
             <div class="bg-white p-6 rounded-xl border shadow-sm">
                 <span class="text-xs uppercase font-bold text-amber-600">Referenciales</span>
                 <div class="text-3xl font-bold mt-2" id="kpi-refe">0</div>
-            </div>
-            
-            <div class="bg-white p-6 rounded-xl border shadow-sm">
-                <span class="text-xs uppercase font-bold text-purple-600">Identificadas Ayer</span>
-                <div class="text-sm mt-2" id="kpi-ayer-detalle">0</div>
             </div>
         </div>
 
@@ -157,7 +148,7 @@
         let rawData = [];
         let charts = {};
 
-        // --- FUNCIONES DE UTILIDAD (Desplegadas completamente) ---
+        // --- FUNCIONES DE UTILIDAD ---
         function decodeHtml(html) {
             const txt = document.createElement("textarea");
             txt.innerHTML = html;
@@ -173,47 +164,40 @@
             return colors;
         }
 
-        // --- INICIALIZACIÓN DE EVENTOS ---
+        // --- INICIALIZACIÓN ---
         window.addEventListener('DOMContentLoaded', function() {
             fetchData();
             
-            // Asignación explícita de listeners
             document.getElementById('searchInput').addEventListener('input', applyFilters);
             document.getElementById('filterPilar').addEventListener('change', applyFilters);
             document.getElementById('filterTipo').addEventListener('change', applyFilters);
             document.getElementById('btnReset').addEventListener('click', resetDashboard);
         });
 
-        // --- CARGA DE DATOS ---
+        // --- LÓGICA DE DATOS ---
         function fetchData() {
             Papa.parse(csvUrl, {
                 download: true,
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    // Procesar datos y excluir "SIN NOVEDAD"
                     rawData = [];
                     for (let i = 0; i < results.data.length; i++) {
                         const row = results.data[i];
                         const normaText = (row['Norma'] || '').trim().toUpperCase();
-                        
-                        // Validar exclusión
                         if (normaText !== "" && normaText !== "SIN NOVEDAD") {
-                            const newRow = {
+                            rawData.push({
                                 ...row,
                                 year: (row['Fecha'] || '').split('/')[2] || 'N/A'
-                            };
-                            rawData.push(newRow);
+                            });
                         }
                     }
-                    
                     populateDropdowns(rawData);
                     renderAll(rawData);
                 }
             });
         }
 
-        // --- POBLADO DE SELECTS ---
         function populateDropdowns(data) {
             const pilarSelect = document.getElementById('filterPilar');
             const tipoSelect = document.getElementById('filterTipo');
@@ -236,7 +220,6 @@
                 opt.textContent = pilares[i];
                 pilarSelect.appendChild(opt);
             }
-            
             for (let i = 0; i < tipos.length; i++) {
                 const opt = document.createElement('option');
                 opt.value = tipos[i];
@@ -245,7 +228,6 @@
             }
         }
 
-        // --- RENDERIZADO ---
         function renderAll(data) {
             renderTable(data);
             renderKPIs(data);
@@ -261,7 +243,6 @@
                 const item = reversedData[i];
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-blue-50";
-                
                 tr.innerHTML = `
                     <td class="whitespace-nowrap">${item['Fecha'] || '-'}</td>
                     <td class="font-bold">${decodeHtml(item['Norma'] || '-')}</td>
@@ -276,9 +257,7 @@
             }
         }
 
-        // --- LÓGICA DE KPIs ---
         function renderKPIs(data) {
-            let total = data.length;
             let obli = 0;
             let info = 0;
             let refe = 0;
@@ -290,37 +269,12 @@
                 else if (tipo.includes('REFERENCIAL')) { refe++; }
             }
             
-            document.getElementById('kpi-total').textContent = total;
+            document.getElementById('kpi-total').textContent = data.length;
             document.getElementById('kpi-obli').textContent = obli;
             document.getElementById('kpi-info').textContent = info;
             document.getElementById('kpi-refe').textContent = refe;
-
-            // Fecha de ayer
-            const y = new Date();
-            y.setDate(y.getDate() - 1);
-            const yStr = ('0' + y.getDate()).slice(-2) + '/' + ('0' + (y.getMonth() + 1)).slice(-2) + '/' + y.getFullYear();
-            
-            const ayer = [];
-            for (let i = 0; i < data.length; i++) {
-                if ((data[i]['Fecha'] || '').trim() === yStr) {
-                    ayer.push(data[i]);
-                }
-            }
-            
-            const aCounts = {};
-            for (let i = 0; i < ayer.length; i++) {
-                const t = ayer[i]['Tipo de norma'] || 'Sin tipo';
-                aCounts[t] = (aCounts[t] || 0) + 1;
-            }
-            
-            let detalle = '';
-            for (const key in aCounts) {
-                detalle += key + ': ' + aCounts[key] + '<br>';
-            }
-            document.getElementById('kpi-ayer-detalle').innerHTML = detalle || 'Ninguna';
         }
 
-        // --- FILTROS ---
         function applyFilters() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const pilar = document.getElementById('filterPilar').value;
@@ -347,7 +301,6 @@
             renderAll(rawData);
         }
 
-        // --- GRÁFICOS ---
         function updateCharts(data) {
             if (charts.chartYears) charts.chartYears.destroy();
             if (charts.chartPillars) charts.chartPillars.destroy();
@@ -365,10 +318,7 @@
             const yData = getCounts('year');
             charts.chartYears = new Chart(document.getElementById('chartYears'), {
                 type: 'bar', 
-                data: { 
-                    labels: Object.keys(yData), 
-                    datasets: [{ label: 'Normas', data: Object.values(yData), backgroundColor: '#3b82f6' }] 
-                },
+                data: { labels: Object.keys(yData), datasets: [{ label: 'Normas', data: Object.values(yData), backgroundColor: '#3b82f6' }] },
                 options: { plugins: { title: { display: true, text: 'Evolución Anual' } } }
             });
             
