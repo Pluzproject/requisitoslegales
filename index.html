@@ -181,8 +181,8 @@
         const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIGndiBxp88Vdkl1NdJ4W63zLqKeotEg8_gBqUMnSz4JHef48eET9R6A265qibhQDbZUUxe5kM-n4L/pub?output=csv';
         
         // Variables globales para almacenamiento de datos
-        let rawData = [];
-        let charts = {};
+        var rawData = [];
+        var charts = {};
 
         // Inicialización del DOM
         window.addEventListener('DOMContentLoaded', function() {
@@ -394,39 +394,67 @@
             // 3. Lógica para Autoridades (Top 10 + Otros)
             var counts = getCounts('Autoridad');
             
-            var sortable = Object.entries(counts).sort(function(a, b) {
-                return b[1] - a[1];
+            // Convertimos el objeto de conteos en un array [clave, valor] para ordenar
+            var sortable = [];
+            for(var key in counts) {
+                sortable.push([key, counts[key]]);
+            }
+            sortable.sort(function(a, b) {
+                return b[1] - a[1]; // Orden descendente
             });
             
+            // Extraemos el top 10
             var top10 = sortable.slice(0, 10);
-            var others = sortable.slice(10).reduce(function(acc, curr) {
-                return acc + curr[1];
-            }, 0);
-
-            var finalLabels = top10.map(function(item) { return item[0]; });
-            var finalData = top10.map(function(item) { return item[1]; });
             
+            // Sumamos el resto en la categoría "Otros"
+            var others = 0;
+            for(var i = 10; i < sortable.length; i++) {
+                others += sortable[i][1];
+            }
+
+            // Preparamos los datos finales
+            var finalLabels = [];
+            var finalData = [];
+            
+            for(var k = 0; k < top10.length; k++) {
+                finalLabels.push(top10[k][0]);
+                finalData.push(top10[k][1]);
+            }
+            
+            // Añadimos "Otros" si existen elementos sobrantes
             if (others > 0) {
                 finalLabels.push('Otros');
                 finalData.push(others);
             }
 
-            // Gráfico de Autoridad (Barra Horizontal) - MODIFICACIÓN PARA EXPANDIR:
+            // Gráfico de Autoridad (Barra Horizontal - Modificado según tus preferencias)
             charts.chartAuthorities = new Chart(document.getElementById('chartAuthorities'), {
                 type: 'bar',
                 data: {
                     labels: finalLabels,
-                    datasets: [{ label: 'Normas', data: finalData, backgroundColor: '#a78bfa' }]
+                    datasets: [{ 
+                        label: 'Normas', 
+                        data: finalData, 
+                        backgroundColor: '#1e3a8a' // Azul oscuro
+                    }]
                 },
                 options: { 
                     responsive: true,
-                    maintainAspectRatio: false, // <-- Esto fuerza la expansión vertical
-                    indexAxis: 'y',
+                    maintainAspectRatio: false,
+                    indexAxis: 'y', 
                     plugins: { 
-                        title: { display: true, text: 'Top 10 Autoridades' }
+                        title: { display: true, text: 'Top 10 Autoridades' },
+                        legend: { display: false }
                     },
                     scales: {
-                        x: { beginAtZero: true }
+                        x: { 
+                            beginAtZero: true,
+                            display: false, // Ocultar eje X
+                            grid: { display: false } // Ocultar cuadrícula
+                        },
+                        y: {
+                            grid: { display: false } // Ocultar cuadrícula
+                        }
                     }
                 }
             });
