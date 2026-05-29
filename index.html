@@ -20,9 +20,6 @@
             width: 100%; 
         }
         
-        /* =========================================================
-           ESTILOS DE TABLA
-           ========================================================= */
         th, td { 
             padding: 12px; 
             border-bottom: 1px solid #dbeafe; 
@@ -40,30 +37,24 @@
             background-color: #eff6ff; 
         }
 
-        /* =========================================================
-           CONTENEDOR PRINCIPAL Y ESPACIADO
-           ========================================================= */
         .main-container {
             max-width: 95%;
             margin: 0 auto;
             padding: 2rem 1rem;
         }
 
+        /* =========================================================
+           ESPACIADORES PARA MANTENER ESTRUCTURA EXTENSA
+           ========================================================= */
         .spacer-10 { height: 10px; }
         .spacer-20 { height: 20px; }
-        .spacer-30 { height: 30px; }
-
-        /* =========================================================
-           AJUSTES DE INTERFAZ
-           ========================================================= */
-        .header-bg { background-color: #1e3a8a; }
-        .text-blue-custom { color: #1e3a8a; }
+        .spacer-50 { height: 50px; }
     </style>
 </head>
 
 <body class="bg-blue-50 text-blue-900 font-sans min-h-screen">
 
-    <header class="header-bg text-white shadow-md py-6 px-8 relative">
+    <header class="bg-blue-900 text-white shadow-md py-6 px-8 relative">
         <div class="absolute left-6 top-6">
             <img src="https://raw.githubusercontent.com/Pluzproject/requisitoslegales/main/Logo-SGI-Blanco-1.png" alt="Logo SGI" class="h-10 w-auto opacity-90">
         </div>
@@ -94,6 +85,14 @@
                 <span class="text-xs uppercase font-bold text-amber-600">Referenciales</span>
                 <div class="text-3xl font-bold mt-2" id="kpi-refe">0</div>
             </div>
+        </div>
+
+        <div class="spacer-20"></div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="bg-white p-5 rounded-xl border shadow-sm"><div class="chart-container"><canvas id="chartYears"></canvas></div></div>
+            <div class="bg-white p-5 rounded-xl border shadow-sm"><div class="chart-container"><canvas id="chartPillars"></canvas></div></div>
+            <div class="bg-white p-5 rounded-xl border shadow-sm"><div class="chart-container"><canvas id="chartTypes"></canvas></div></div>
         </div>
 
         <div class="spacer-20"></div>
@@ -133,18 +132,15 @@
     </main>
 
     <script>
-        // =========================================================
-        // CONFIGURACIÓN E INICIALIZACIÓN
-        // =========================================================
         Chart.register(ChartDataLabels);
         const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIGndiBxp88Vdkl1NdJ4W63zLqKeotEg8_gBqUMnSz4JHef48eET9R6A265qibhQDbZUUxe5kM-n4L/pub?output=csv';
         let rawData = [];
+        let charts = {};
 
+        // Inicialización del DOM
         window.addEventListener('DOMContentLoaded', function() {
-            console.log("Iniciando carga de datos...");
             fetchData();
             
-            // Asignación de listeners
             const filters = ['searchInput', 'filterDia', 'filterMes', 'filterAnio', 'filterPilar', 'filterTipo'];
             for(let i = 0; i < filters.length; i++) {
                 document.getElementById(filters[i]).addEventListener('change', applyFilters);
@@ -153,9 +149,7 @@
             document.getElementById('btnReset').addEventListener('click', resetDashboard);
         });
 
-        // =========================================================
-        // CARGA DE DATOS DESDE GOOGLE SHEETS
-        // =========================================================
+        // Carga de datos desde CSV externo
         function fetchData() {
             Papa.parse(csvUrl, {
                 download: true,
@@ -167,12 +161,11 @@
                         let row = results.data[i];
                         let normaText = (row['Norma'] || '').trim().toUpperCase();
                         
-                        // Exclusión de registros sin novedad
                         if(normaText !== "" && normaText !== "SIN NOVEDAD") {
-                            let fechaParts = (row['Fecha'] || '').split('/');
-                            row.d = fechaParts[0] || '';
-                            row.m = fechaParts[1] || '';
-                            row.a = fechaParts[2] || '';
+                            let parts = (row['Fecha'] || '').split('/');
+                            row.d = parts[0] || '';
+                            row.m = parts[1] || '';
+                            row.a = parts[2] || '';
                             rawData.push(row);
                         }
                     }
@@ -182,9 +175,7 @@
             });
         }
 
-        // =========================================================
-        // LÓGICA PARA POBLAR SELECTS DE FILTROS
-        // =========================================================
+        // Población de los selectores de filtros
         function populateFilters() {
             const getUnique = function(key) {
                 let list = [];
@@ -212,9 +203,7 @@
             fillSelect('filterTipo', getUnique('Tipo de norma'));
         }
 
-        // =========================================================
-        // LÓGICA DE RENDERIZADO DE TABLA Y KPIs
-        // =========================================================
+        // Renderizado centralizado de la tabla
         function renderAll(data) {
             let tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
@@ -224,9 +213,9 @@
                 let item = reversed[i];
                 let tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td class="whitespace-nowrap">${item['Fecha'] || '-'}</td>
+                    <td>${item['Fecha'] || '-'}</td>
                     <td class="font-bold">${item['Norma'] || '-'}</td>
-                    <td><span class="px-2 py-1 bg-blue-100 rounded text-xs">${item['Pilar del SIG'] || '-'}</span></td>
+                    <td>${item['Pilar del SIG'] || '-'}</td>
                     <td class="text-xs">${item['Sumilla / Descripción'] || '-'}</td>
                     <td class="text-xs">${item['Autoridad'] || '-'}</td>
                     <td class="text-xs">${item['Tipo de norma'] || '-'}</td>
@@ -236,7 +225,6 @@
                 tbody.appendChild(tr);
             }
 
-            // --- CÁLCULO DE KPIs ---
             let obli = 0, info = 0, refe = 0;
             for(let i = 0; i < data.length; i++) {
                 let t = (data[i]['Tipo de norma'] || '').toUpperCase();
@@ -249,11 +237,42 @@
             document.getElementById('kpi-obli').textContent = obli;
             document.getElementById('kpi-info').textContent = info;
             document.getElementById('kpi-refe').textContent = refe;
+            
+            updateCharts(data);
         }
 
-        // =========================================================
-        // LÓGICA DE FILTRADO Y RESET
-        // =========================================================
+        // Lógica de gráficos y actualización visual
+        function updateCharts(data) {
+            ['chartYears', 'chartPillars', 'chartTypes'].forEach(id => { if(charts[id]) charts[id].destroy(); });
+            
+            const getCounts = function(key) {
+                let counts = {};
+                for(let i = 0; i < data.length; i++) {
+                    let val = data[i][key] || 'N/A';
+                    counts[val] = (counts[val] || 0) + 1;
+                }
+                return counts;
+            };
+
+            charts.chartYears = new Chart(document.getElementById('chartYears'), {
+                type: 'bar', 
+                data: { labels: Object.keys(getCounts('a')), datasets: [{ label: 'Normas', data: Object.values(getCounts('a')), backgroundColor: '#3b82f6' }] }, 
+                options: { plugins: { title: { display: true, text: 'Evolución Anual' } } }
+            });
+            
+            const createDoughnut = function(canvasId, dataObj, titleText) {
+                return new Chart(document.getElementById(canvasId), {
+                    type: 'doughnut',
+                    data: { labels: Object.keys(dataObj), datasets: [{ data: Object.values(dataObj), backgroundColor: ['#f87171', '#4ade80', '#60a5fa', '#a78bfa'] }] },
+                    options: { plugins: { title: { display: true, text: titleText }, datalabels: { formatter: (v, ctx) => { const s = ctx.dataset.data.reduce((a, b) => a+b, 0); return ((v*100)/s).toFixed(1) + "%"; } } } }
+                });
+            };
+            
+            charts.chartPillars = createDoughnut('chartPillars', getCounts('Pilar del SIG'), 'Distribución por Pilares');
+            charts.chartTypes = createDoughnut('chartTypes', getCounts('Tipo de norma'), 'Distribución por Tipos');
+        }
+
+        // Lógica de filtrado concurrente
         function applyFilters() {
             let s = document.getElementById('searchInput').value.toLowerCase();
             let d = document.getElementById('filterDia').value;
@@ -279,6 +298,7 @@
             renderAll(filtered);
         }
 
+        // Reset total
         function resetDashboard() {
             let ids = ['searchInput', 'filterDia', 'filterMes', 'filterAnio', 'filterPilar', 'filterTipo'];
             for(let i = 0; i < ids.length; i++) {
