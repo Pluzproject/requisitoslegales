@@ -102,6 +102,7 @@
                 <input type="text" id="searchInput" placeholder="Buscar..." class="w-full md:w-60 px-4 py-2 border rounded-lg text-sm">
                 
                 <input type="date" id="filterFecha" class="border rounded-lg text-sm px-3 py-2" title="Seleccionar Día">
+                <select id="filterMesAnio" class="border rounded-lg text-sm px-3 py-2"><option value="">Mes/Año</option></select>
                 <select id="filterAnio" class="border rounded-lg text-sm px-3 py-2"><option value="">Año</option></select>
                 
                 <select id="filterPilar" class="border rounded-lg text-sm px-3 py-2"><option value="">Todos los Pilares</option></select>
@@ -131,17 +132,17 @@
     </main>
 
     <script>
-        // Configuración inicial de las librerías
+        // Configuración inicial de librerías
         Chart.register(ChartDataLabels);
         const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIGndiBxp88Vdkl1NdJ4W63zLqKeotEg8_gBqUMnSz4JHef48eET9R6A265qibhQDbZUUxe5kM-n4L/pub?output=csv';
         let rawData = [];
         let charts = {};
 
-        // Evento principal al cargar el DOM
+        // Inicialización del DOM
         window.addEventListener('DOMContentLoaded', function() {
             fetchData();
             
-            const filters = ['searchInput', 'filterFecha', 'filterAnio', 'filterPilar', 'filterTipo'];
+            const filters = ['searchInput', 'filterFecha', 'filterMesAnio', 'filterAnio', 'filterPilar', 'filterTipo'];
             for(let i = 0; i < filters.length; i++) {
                 document.getElementById(filters[i]).addEventListener('change', applyFilters);
                 document.getElementById(filters[i]).addEventListener('input', applyFilters);
@@ -161,7 +162,6 @@
                         let row = results.data[i];
                         let normaText = (row['Norma'] || '').trim().toUpperCase();
                         
-                        // Excluir filas vacías o con "SIN NOVEDAD"
                         if(normaText !== "" && normaText !== "SIN NOVEDAD") {
                             // Estandarización de fechas
                             let f = (row['Fecha'] || '').split('/');
@@ -171,6 +171,7 @@
                                 let a = f[2];
                                 row.fEstandar = `${d}/${m}/${a}`;
                                 row.rawD = `${a}-${m}-${d}`;
+                                row.mesAnio = `${m}/${a}`; // Campo para el filtro Mes/Año
                                 row.a = a;
                             }
                             rawData.push(row);
@@ -203,12 +204,13 @@
                 }
             };
 
+            fillSelect('filterMesAnio', getUnique('mesAnio'));
             fillSelect('filterAnio', getUnique('a'));
             fillSelect('filterPilar', getUnique('Pilar del SIG'));
             fillSelect('filterTipo', getUnique('Tipo de norma'));
         }
 
-        // Función para renderizar la tabla y calcular los KPIs
+        // Función para renderizar tabla y KPIs
         function renderAll(data) {
             let tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
@@ -230,7 +232,6 @@
                 tbody.appendChild(tr);
             }
 
-            // Cálculo de KPIs
             let obli = 0, info = 0, refe = 0;
             for(let i = 0; i < data.length; i++) {
                 let t = (data[i]['Tipo de norma'] || '').toUpperCase();
@@ -247,7 +248,7 @@
             updateCharts(data);
         }
 
-        // Lógica de gráficos
+        // Lógica de actualización de gráficos
         function updateCharts(data) {
             ['chartYears', 'chartPillars', 'chartTypes'].forEach(id => { if(charts[id]) charts[id].destroy(); });
             
@@ -260,14 +261,12 @@
                 return counts;
             };
 
-            // Gráfico de Barras Anual
             charts.chartYears = new Chart(document.getElementById('chartYears'), {
                 type: 'bar', 
                 data: { labels: Object.keys(getCounts('a')), datasets: [{ label: 'Normas', data: Object.values(getCounts('a')), backgroundColor: '#3b82f6' }] }, 
                 options: { plugins: { title: { display: true, text: 'Evolución Anual' } } }
             });
             
-            // Función auxiliar para Gráficos Doughnut
             const createDoughnut = function(canvasId, dataObj, titleText) {
                 return new Chart(document.getElementById(canvasId), {
                     type: 'doughnut',
@@ -284,6 +283,7 @@
         function applyFilters() {
             let s = document.getElementById('searchInput').value.toLowerCase();
             let d = document.getElementById('filterFecha').value;
+            let ma = document.getElementById('filterMesAnio').value;
             let a = document.getElementById('filterAnio').value;
             let p = document.getElementById('filterPilar').value;
             let t = document.getElementById('filterTipo').value;
@@ -293,11 +293,12 @@
                 let item = rawData[i];
                 let matchS = (item['Norma'].toLowerCase().includes(s) || item['Sumilla / Descripción'].toLowerCase().includes(s));
                 let matchD = (!d || item.rawD === d);
+                let matchMA = (!ma || item.mesAnio === ma);
                 let matchA = (!a || item.a === a);
                 let matchP = (!p || item['Pilar del SIG'] === p);
                 let matchT = (!t || item['Tipo de norma'] === t);
 
-                if(matchS && matchD && matchA && matchP && matchT) {
+                if(matchS && matchD && matchMA && matchA && matchP && matchT) {
                     filtered.push(item);
                 }
             }
@@ -306,7 +307,7 @@
 
         // Reset total
         function resetDashboard() {
-            let ids = ['searchInput', 'filterFecha', 'filterAnio', 'filterPilar', 'filterTipo'];
+            let ids = ['searchInput', 'filterFecha', 'filterMesAnio', 'filterAnio', 'filterPilar', 'filterTipo'];
             for(let i = 0; i < ids.length; i++) {
                 document.getElementById(ids[i]).value = '';
             }
