@@ -16,7 +16,7 @@
            ========================================================= */
         .chart-container { 
             position: relative; 
-            height: 300px; 
+            height: 350px; 
             width: 100%; 
         }
         
@@ -67,6 +67,7 @@
     </header>
 
     <main class="main-container">
+        
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
             
             <div class="lg:col-span-3 space-y-8">
@@ -90,6 +91,8 @@
                     </div>
                 </div>
 
+                <div class="spacer-20"></div>
+
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="bg-white p-5 rounded-xl border shadow-sm">
                         <div class="chart-container"><canvas id="chartYears"></canvas></div>
@@ -98,9 +101,11 @@
                         <div class="chart-container"><canvas id="chartPillars"></canvas></div>
                     </div>
                     <div class="bg-white p-5 rounded-xl border shadow-sm">
-                        <div class="chart-container"><canvas id="chartTypes"></canvas></div>
+                        <div class="chart-container"><canvas id="chartAuthorities"></canvas></div>
                     </div>
                 </div>
+
+                <div class="spacer-20"></div>
 
                 <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden">
                     <div class="overflow-x-auto">
@@ -126,7 +131,7 @@
             <aside class="bg-white p-6 rounded-xl border shadow-sm h-fit sticky top-6 space-y-4">
                 <h2 class="font-bold text-blue-900 border-b pb-2">Filtros de Búsqueda</h2>
                 
-                <input type="text" id="searchInput" placeholder="Buscar norma..." class="w-full px-4 py-2 border rounded-lg text-sm">
+                <input type="text" id="searchInput" placeholder="Buscar norma o descripción..." class="w-full px-4 py-2 border rounded-lg text-sm">
                 
                 <div class="space-y-1">
                     <label class="text-xs font-bold text-gray-500">Fecha Específica</label>
@@ -169,32 +174,45 @@
     </main>
 
     <script>
-        // Configuración inicial de las librerías necesarias
+        // Configuración inicial de librerías
         Chart.register(ChartDataLabels);
         
-        // URL de la fuente de datos
+        // Configuración de URL del CSV
         const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIGndiBxp88Vdkl1NdJ4W63zLqKeotEg8_gBqUMnSz4JHef48eET9R6A265qibhQDbZUUxe5kM-n4L/pub?output=csv';
         
-        // Variables globales
+        // Variables globales para almacenamiento de datos
         let rawData = [];
         let charts = {};
 
-        // Evento que inicia al cargar el documento
+        // Inicialización del DOM
         window.addEventListener('DOMContentLoaded', function() {
             fetchData();
             
-            // Asignación de listeners a los filtros
-            var filterIds = ['searchInput', 'filterFecha', 'filterFechaDesde', 'filterFechaHasta', 'filterMesAnio', 'filterAnio', 'filterPilar', 'filterTipo'];
+            // Lista de filtros para iterar y asignar eventos
+            var filterIds = [
+                'searchInput', 
+                'filterFecha', 
+                'filterFechaDesde', 
+                'filterFechaHasta', 
+                'filterMesAnio', 
+                'filterAnio', 
+                'filterPilar', 
+                'filterTipo'
+            ];
             
+            // Asignación de listeners
             for(var i = 0; i < filterIds.length; i++) {
-                document.getElementById(filterIds[i]).addEventListener('change', applyFilters);
-                document.getElementById(filterIds[i]).addEventListener('input', applyFilters);
+                var element = document.getElementById(filterIds[i]);
+                if(element) {
+                    element.addEventListener('change', applyFilters);
+                    element.addEventListener('input', applyFilters);
+                }
             }
             
             document.getElementById('btnReset').addEventListener('click', resetDashboard);
         });
 
-        // Función para cargar los datos y procesarlos
+        // Función para cargar los datos del CSV
         function fetchData() {
             Papa.parse(csvUrl, {
                 download: true,
@@ -203,14 +221,15 @@
                 complete: function(results) {
                     rawData = [];
                     
+                    // Procesamiento de datos crudos
                     for(var i = 0; i < results.data.length; i++) {
                         var row = results.data[i];
                         var normaText = (row['Norma'] || '').trim().toUpperCase();
                         
-                        // Excluir filas sin contenido relevante
+                        // Validar si la norma tiene datos
                         if(normaText !== "" && normaText !== "SIN NOVEDAD") {
                             
-                            // Normalización de fechas para compatibilidad
+                            // Normalización de fechas para facilitar filtrado
                             var fechaOriginal = (row['Fecha'] || '');
                             var partes = fechaOriginal.split('/');
                             
@@ -229,16 +248,17 @@
                         }
                     }
                     
+                    // Una vez cargados, inicializamos los selectores y la vista
                     populateFilters();
                     renderAll(rawData);
                 }
             });
         }
 
-        // Función para llenar los selectores (filtros)
+        // Función para poblar dinámicamente los selectores de filtro
         function populateFilters() {
             
-            // Función auxiliar para obtener valores únicos
+            // Función auxiliar para extraer únicos
             function getUniqueValues(key) {
                 var values = [];
                 for(var i = 0; i < rawData.length; i++) {
@@ -250,21 +270,23 @@
                 return values;
             }
 
-            // Función para llenar el DOM del select
+            // Función genérica de llenado de selectores
             function fillSelectElement(id, data, sortDesc) {
                 var select = document.getElementById(id);
                 
-                // Ordenamiento
+                // Ordenamiento de los datos del filtro
                 if(sortDesc) {
                     data.sort(function(a, b) {
                         var p1 = a.split('/');
                         var p2 = b.split('/');
+                        // Comparativa inversa de fechas Mes/Año
                         return new Date(p2[1], p2[0] - 1) - new Date(p1[1], p1[0] - 1);
                     });
                 } else {
                     data.sort();
                 }
 
+                // Generar options
                 for(var i = 0; i < data.length; i++) {
                     var option = document.createElement('option');
                     option.value = data[i];
@@ -273,20 +295,22 @@
                 }
             }
 
+            // Llenar cada selector
             fillSelectElement('filterMesAnio', getUniqueValues('mesAnio'), true);
             fillSelectElement('filterAnio', getUniqueValues('a'), false);
             fillSelectElement('filterPilar', getUniqueValues('Pilar del SIG'), false);
             fillSelectElement('filterTipo', getUniqueValues('Tipo de norma'), false);
         }
 
-        // Función para renderizar la tabla y KPIs
+        // Función para renderizar tabla y KPIs
         function renderAll(data) {
             var tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             
-            // Mostrar los datos más recientes primero
+            // Ordenar visualmente (más reciente arriba)
             var reversedData = data.slice().reverse();
             
+            // Renderizado de tabla
             for(var i = 0; i < reversedData.length; i++) {
                 var item = reversedData[i];
                 var tr = document.createElement('tr');
@@ -302,7 +326,7 @@
                 tbody.appendChild(tr);
             }
 
-            // Calcular KPIs
+            // Cálculo y actualización de KPIs
             var obli = 0;
             var info = 0;
             var refe = 0;
@@ -323,16 +347,19 @@
             document.getElementById('kpi-info').textContent = info;
             document.getElementById('kpi-refe').textContent = refe;
             
+            // Actualizar gráficos tras renderizar tabla
             updateCharts(data);
         }
 
-        // Actualizar gráficos
+        // Función de actualización de gráficos
         function updateCharts(data) {
-            // Destruir gráficos previos
+            
+            // Destruir instancias previas
             if(charts.chartYears) charts.chartYears.destroy();
             if(charts.chartPillars) charts.chartPillars.destroy();
-            if(charts.chartTypes) charts.chartTypes.destroy();
+            if(charts.chartAuthorities) charts.chartAuthorities.destroy();
             
+            // Función auxiliar para contar ocurrencias
             function getCounts(key) {
                 var counts = {};
                 for(var i = 0; i < data.length; i++) {
@@ -342,7 +369,7 @@
                 return counts;
             }
 
-            // Gráfico Anual
+            // 1. Gráfico Anual (Barras)
             var dataYears = getCounts('a');
             charts.chartYears = new Chart(document.getElementById('chartYears'), {
                 type: 'bar',
@@ -353,28 +380,35 @@
                 options: { plugins: { title: { display: true, text: 'Evolución Anual' } } }
             });
 
-            // Gráficos circulares
-            function createDonut(id, counts, text) {
-                return new Chart(document.getElementById(id), {
-                    type: 'doughnut',
-                    data: {
-                        labels: Object.keys(counts),
-                        datasets: [{ data: Object.values(counts), backgroundColor: ['#f87171', '#4ade80', '#60a5fa', '#a78bfa'] }]
-                    },
-                    options: { 
-                        plugins: { 
-                            title: { display: true, text: text },
-                            datalabels: { formatter: function(v, ctx) { return v + " u."; } }
-                        } 
+            // 2. Gráfico Pilares (Doughnut)
+            var dataPillars = getCounts('Pilar del SIG');
+            charts.chartPillars = new Chart(document.getElementById('chartPillars'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(dataPillars),
+                    datasets: [{ data: Object.values(dataPillars), backgroundColor: ['#f87171', '#4ade80', '#60a5fa', '#a78bfa'] }]
+                },
+                options: { plugins: { title: { display: true, text: 'Distribución por Pilares' } } }
+            });
+
+            // 3. Gráfico Autoridades (Barra Horizontal)
+            var dataAuthorities = getCounts('Autoridad');
+            charts.chartAuthorities = new Chart(document.getElementById('chartAuthorities'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(dataAuthorities),
+                    datasets: [{ label: 'Normas', data: Object.values(dataAuthorities), backgroundColor: '#a78bfa' }]
+                },
+                options: { 
+                    indexAxis: 'y', // Configuración clave para barras horizontales
+                    plugins: { 
+                        title: { display: true, text: 'Normas por Autoridad' }
                     }
-                });
-            }
-            
-            charts.chartPillars = createDonut('chartPillars', getCounts('Pilar del SIG'), 'Distribución por Pilares');
-            charts.chartTypes = createDonut('chartTypes', getCounts('Tipo de norma'), 'Distribución por Tipos');
+                }
+            });
         }
 
-        // Aplicar filtros lógicos
+        // Lógica de filtrado
         function applyFilters() {
             var s = document.getElementById('searchInput').value.toLowerCase();
             var d = document.getElementById('filterFecha').value;
@@ -387,6 +421,7 @@
 
             var filtered = [];
             
+            // Loop de filtrado
             for(var i = 0; i < rawData.length; i++) {
                 var item = rawData[i];
                 
@@ -398,16 +433,19 @@
                 var matchPI = (!pi || item['Pilar del SIG'] === pi);
                 var matchTI = (!ti || item['Tipo de norma'] === ti);
                 
+                // Si todo coincide, se añade al array de filtrado
                 if(matchS && matchD && matchRange && matchMA && matchAN && matchPI && matchTI) {
                     filtered.push(item);
                 }
             }
             
+            // Renderizamos con los datos filtrados
             renderAll(filtered);
         }
 
-        // Reiniciar dashboard
+        // Reset total
         function resetDashboard() {
+            // Limpiar inputs
             document.getElementById('searchInput').value = '';
             document.getElementById('filterFecha').value = '';
             document.getElementById('filterFechaDesde').value = '';
@@ -417,6 +455,7 @@
             document.getElementById('filterPilar').value = '';
             document.getElementById('filterTipo').value = '';
             
+            // Re-renderizar todo
             renderAll(rawData);
         }
     </script>
