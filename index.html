@@ -191,11 +191,23 @@
                     let val = rawData[i][key];
                     if(val && list.indexOf(val) === -1) list.push(val);
                 }
-                return list.sort();
+                return list;
             };
 
-            const fillSelect = function(id, data) {
+            const fillSelect = function(id, data, sortDesc = false) {
                 let select = document.getElementById(id);
+                
+                // Lógica de ordenamiento específica
+                if(sortDesc) {
+                    data.sort((a, b) => {
+                        let [m1, y1] = a.split('/');
+                        let [m2, y2] = b.split('/');
+                        return new Date(y2, m2 - 1) - new Date(y1, m1 - 1);
+                    });
+                } else {
+                    data.sort();
+                }
+
                 for(let i = 0; i < data.length; i++) {
                     let opt = document.createElement('option');
                     opt.value = data[i];
@@ -204,7 +216,7 @@
                 }
             };
 
-            fillSelect('filterMesAnio', getUnique('mesAnio'));
+            fillSelect('filterMesAnio', getUnique('mesAnio'), true);
             fillSelect('filterAnio', getUnique('a'));
             fillSelect('filterPilar', getUnique('Pilar del SIG'));
             fillSelect('filterTipo', getUnique('Tipo de norma'));
@@ -232,6 +244,7 @@
                 tbody.appendChild(tr);
             }
 
+            // Cálculo de KPIs
             let obli = 0, info = 0, refe = 0;
             for(let i = 0; i < data.length; i++) {
                 let t = (data[i]['Tipo de norma'] || '').toUpperCase();
@@ -261,12 +274,14 @@
                 return counts;
             };
 
+            // Gráfico de Barras Anual
             charts.chartYears = new Chart(document.getElementById('chartYears'), {
                 type: 'bar', 
                 data: { labels: Object.keys(getCounts('a')), datasets: [{ label: 'Normas', data: Object.values(getCounts('a')), backgroundColor: '#3b82f6' }] }, 
                 options: { plugins: { title: { display: true, text: 'Evolución Anual' } } }
             });
             
+            // Función auxiliar para Gráficos Doughnut
             const createDoughnut = function(canvasId, dataObj, titleText) {
                 return new Chart(document.getElementById(canvasId), {
                     type: 'doughnut',
