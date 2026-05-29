@@ -131,7 +131,7 @@
             <aside class="bg-white p-6 rounded-xl border shadow-sm h-fit sticky top-6 space-y-4">
                 <h2 class="font-bold text-blue-900 border-b pb-2">Filtros de Búsqueda</h2>
                 
-                <input type="text" id="searchInput" placeholder="Buscar norma o descripción..." class="w-full px-4 py-2 border rounded-lg text-sm">
+                <input type="text" id="searchInput" placeholder="Buscar norma..." class="w-full px-4 py-2 border rounded-lg text-sm">
                 
                 <div class="space-y-1">
                     <label class="text-xs font-bold text-gray-500">Fecha Específica</label>
@@ -391,18 +391,46 @@
                 options: { plugins: { title: { display: true, text: 'Distribución por Pilares' } } }
             });
 
-            // 3. Gráfico Autoridades (Barra Horizontal)
-            var dataAuthorities = getCounts('Autoridad');
+            // 3. Lógica para Autoridades (Top 10 + Otros)
+            var counts = getCounts('Autoridad');
+            
+            // Convertimos el objeto de conteos en un array [clave, valor] para ordenar
+            var sortable = Object.entries(counts).sort(function(a, b) {
+                return b[1] - a[1]; // Orden descendente
+            });
+            
+            // Extraemos el top 10
+            var top10 = sortable.slice(0, 10);
+            
+            // Sumamos el resto en la categoría "Otros"
+            var others = sortable.slice(10).reduce(function(acc, curr) {
+                return acc + curr[1];
+            }, 0);
+
+            // Preparamos los datos finales
+            var finalLabels = top10.map(function(item) { return item[0]; });
+            var finalData = top10.map(function(item) { return item[1]; });
+            
+            // Añadimos "Otros" si existen elementos sobrantes
+            if (others > 0) {
+                finalLabels.push('Otros');
+                finalData.push(others);
+            }
+
+            // Gráfico de Autoridad (Barra Horizontal)
             charts.chartAuthorities = new Chart(document.getElementById('chartAuthorities'), {
                 type: 'bar',
                 data: {
-                    labels: Object.keys(dataAuthorities),
-                    datasets: [{ label: 'Normas', data: Object.values(dataAuthorities), backgroundColor: '#a78bfa' }]
+                    labels: finalLabels,
+                    datasets: [{ label: 'Normas', data: finalData, backgroundColor: '#a78bfa' }]
                 },
                 options: { 
                     indexAxis: 'y', // Configuración clave para barras horizontales
                     plugins: { 
-                        title: { display: true, text: 'Normas por Autoridad' }
+                        title: { display: true, text: 'Top 10 Autoridades' }
+                    },
+                    scales: {
+                        x: { beginAtZero: true }
                     }
                 }
             });
