@@ -131,13 +131,13 @@
     </main>
 
     <script>
-        // Inicialización y configuración
+        // Configuración inicial de las librerías
         Chart.register(ChartDataLabels);
         const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIGndiBxp88Vdkl1NdJ4W63zLqKeotEg8_gBqUMnSz4JHef48eET9R6A265qibhQDbZUUxe5kM-n4L/pub?output=csv';
         let rawData = [];
         let charts = {};
 
-        // Listener de carga
+        // Evento principal al cargar el DOM
         window.addEventListener('DOMContentLoaded', function() {
             fetchData();
             
@@ -149,7 +149,7 @@
             document.getElementById('btnReset').addEventListener('click', resetDashboard);
         });
 
-        // Función para obtener los datos
+        // Función para cargar los datos del CSV y normalizarlos
         function fetchData() {
             Papa.parse(csvUrl, {
                 download: true,
@@ -161,13 +161,18 @@
                         let row = results.data[i];
                         let normaText = (row['Norma'] || '').trim().toUpperCase();
                         
+                        // Excluir filas vacías o con "SIN NOVEDAD"
                         if(normaText !== "" && normaText !== "SIN NOVEDAD") {
-                            let parts = (row['Fecha'] || '').split('/');
-                            row.d = parts[0] || '';
-                            row.m = parts[1] || '';
-                            row.a = parts[2] || '';
-                            // Convertir fecha de DD/MM/AAAA a YYYY-MM-DD para el calendario
-                            row.rawD = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                            // Estandarización de fechas
+                            let f = (row['Fecha'] || '').split('/');
+                            if(f.length === 3) {
+                                let d = f[0].padStart(2, '0');
+                                let m = f[1].padStart(2, '0');
+                                let a = f[2];
+                                row.fEstandar = `${d}/${m}/${a}`;
+                                row.rawD = `${a}-${m}-${d}`;
+                                row.a = a;
+                            }
                             rawData.push(row);
                         }
                     }
@@ -177,7 +182,7 @@
             });
         }
 
-        // Función para poblar los selects
+        // Función para poblar dinámicamente los selectores
         function populateFilters() {
             const getUnique = function(key) {
                 let list = [];
@@ -203,7 +208,7 @@
             fillSelect('filterTipo', getUnique('Tipo de norma'));
         }
 
-        // Función principal de renderizado
+        // Función para renderizar la tabla y calcular los KPIs
         function renderAll(data) {
             let tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
@@ -213,7 +218,7 @@
                 let item = reversed[i];
                 let tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${item['Fecha'] || '-'}</td>
+                    <td>${item.fEstandar || item['Fecha'] || '-'}</td>
                     <td class="font-bold">${item['Norma'] || '-'}</td>
                     <td>${item['Pilar del SIG'] || '-'}</td>
                     <td class="text-xs">${item['Sumilla / Descripción'] || '-'}</td>
@@ -225,7 +230,7 @@
                 tbody.appendChild(tr);
             }
 
-            // Actualización de KPIs
+            // Cálculo de KPIs
             let obli = 0, info = 0, refe = 0;
             for(let i = 0; i < data.length; i++) {
                 let t = (data[i]['Tipo de norma'] || '').toUpperCase();
@@ -242,7 +247,7 @@
             updateCharts(data);
         }
 
-        // Función para actualizar gráficos
+        // Lógica de gráficos
         function updateCharts(data) {
             ['chartYears', 'chartPillars', 'chartTypes'].forEach(id => { if(charts[id]) charts[id].destroy(); });
             
@@ -255,12 +260,14 @@
                 return counts;
             };
 
+            // Gráfico de Barras Anual
             charts.chartYears = new Chart(document.getElementById('chartYears'), {
                 type: 'bar', 
                 data: { labels: Object.keys(getCounts('a')), datasets: [{ label: 'Normas', data: Object.values(getCounts('a')), backgroundColor: '#3b82f6' }] }, 
                 options: { plugins: { title: { display: true, text: 'Evolución Anual' } } }
             });
             
+            // Función auxiliar para Gráficos Doughnut
             const createDoughnut = function(canvasId, dataObj, titleText) {
                 return new Chart(document.getElementById(canvasId), {
                     type: 'doughnut',
@@ -273,7 +280,7 @@
             charts.chartTypes = createDoughnut('chartTypes', getCounts('Tipo de norma'), 'Distribución por Tipos');
         }
 
-        // Lógica de filtrado
+        // Lógica de filtrado concurrente
         function applyFilters() {
             let s = document.getElementById('searchInput').value.toLowerCase();
             let d = document.getElementById('filterFecha').value;
@@ -297,7 +304,7 @@
             renderAll(filtered);
         }
 
-        // Reset
+        // Reset total
         function resetDashboard() {
             let ids = ['searchInput', 'filterFecha', 'filterAnio', 'filterPilar', 'filterTipo'];
             for(let i = 0; i < ids.length; i++) {
