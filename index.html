@@ -178,7 +178,7 @@
         Chart.register(ChartDataLabels);
         
         // Configuración de URL del CSV
-        const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIGndiBxp88Vdkl1NdJ4W63zLqKeotEg8_gBqUMnSz4JHef48eET9R6A265qibhQDbZUUxe5kM-n4L/pub?output=csv';
+        var csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIGndiBxp88Vdkl1NdJ4W63zLqKeotEg8_gBqUMnSz4JHef48eET9R6A265qibhQDbZUUxe5kM-n4L/pub?output=csv';
         
         // Variables globales para almacenamiento de datos
         var rawData = [];
@@ -380,15 +380,47 @@
                 options: { plugins: { title: { display: true, text: 'Evolución Anual' } } }
             });
 
-            // 2. Gráfico Pilares (Doughnut)
-            var dataPillars = getCounts('Pilar del SIG');
+            // 2. Gráfico ISO (Transformación de Pilares)
+            var pRaw = getCounts('Pilar del SIG');
+            var pIso = { 
+                'ISO 45001': 0, 
+                'ISO 14001': 0, 
+                'ISO 37001': 0, 
+                'Otras Normas ISO': 0 
+            };
+            
+            // Mapeo lógico de Pilares a Normas ISO
+            for (var pKey in pRaw) {
+                var p = pKey.trim();
+                var count = pRaw[pKey];
+                
+                if (p === 'SST') {
+                    pIso['ISO 45001'] += count;
+                } else if (p === 'Medio Ambiente') {
+                    pIso['ISO 14001'] += count;
+                } else if (p === 'Antisoborno' || p === 'Compliance') {
+                    pIso['ISO 37001'] += count;
+                } else {
+                    pIso['Otras Normas ISO'] += count;
+                }
+            }
+
             charts.chartPillars = new Chart(document.getElementById('chartPillars'), {
-                type: 'doughnut',
+                type: 'bar',
                 data: {
-                    labels: Object.keys(dataPillars),
-                    datasets: [{ data: Object.values(dataPillars), backgroundColor: ['#f87171', '#4ade80', '#60a5fa', '#a78bfa'] }]
+                    labels: Object.keys(pIso),
+                    datasets: [{ 
+                        label: 'Normas', 
+                        data: Object.values(pIso), 
+                        backgroundColor: '#60a5fa' 
+                    }]
                 },
-                options: { plugins: { title: { display: true, text: 'Distribución por Pilares' } } }
+                options: { 
+                    plugins: { 
+                        title: { display: true, text: 'Distribución por Normas ISO' },
+                        legend: { display: false } 
+                    }
+                }
             });
 
             // 3. Lógica para Autoridades (Top 10 + Otros)
