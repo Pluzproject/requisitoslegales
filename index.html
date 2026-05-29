@@ -394,30 +394,24 @@
             // 3. Lógica para Autoridades (Top 10 + Otros)
             var counts = getCounts('Autoridad');
             
-            // Convertimos el objeto de conteos en un array [clave, valor] para ordenar
             var sortable = Object.entries(counts).sort(function(a, b) {
-                return b[1] - a[1]; // Orden descendente
+                return b[1] - a[1];
             });
             
-            // Extraemos el top 10
             var top10 = sortable.slice(0, 10);
-            
-            // Sumamos el resto en la categoría "Otros"
             var others = sortable.slice(10).reduce(function(acc, curr) {
                 return acc + curr[1];
             }, 0);
 
-            // Preparamos los datos finales
             var finalLabels = top10.map(function(item) { return item[0]; });
             var finalData = top10.map(function(item) { return item[1]; });
             
-            // Añadimos "Otros" si existen elementos sobrantes
             if (others > 0) {
                 finalLabels.push('Otros');
                 finalData.push(others);
             }
 
-            // Gráfico de Autoridad (Barra Horizontal)
+            // Gráfico de Autoridad (Barra Horizontal) - MODIFICACIÓN PARA EXPANDIR:
             charts.chartAuthorities = new Chart(document.getElementById('chartAuthorities'), {
                 type: 'bar',
                 data: {
@@ -425,7 +419,9 @@
                     datasets: [{ label: 'Normas', data: finalData, backgroundColor: '#a78bfa' }]
                 },
                 options: { 
-                    indexAxis: 'y', // Configuración clave para barras horizontales
+                    responsive: true,
+                    maintainAspectRatio: false, // <-- Esto fuerza la expansión vertical
+                    indexAxis: 'y',
                     plugins: { 
                         title: { display: true, text: 'Top 10 Autoridades' }
                     },
