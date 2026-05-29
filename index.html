@@ -12,8 +12,8 @@
     
     <style>
         /* =========================================================
-           ESTILOS GENERALES
-           ========================================================= */
+            ESTILOS GENERALES
+            ========================================================= */
         .chart-container { 
             position: relative; 
             height: 350px; 
@@ -44,8 +44,8 @@
         }
 
         /* =========================================================
-           ESPACIADORES PARA MANTENER ESTRUCTURA EXTENSA
-           ========================================================= */
+            ESPACIADORES PARA MANTENER ESTRUCTURA EXTENSA
+            ========================================================= */
         .spacer-10 { height: 10px; }
         .spacer-20 { height: 20px; }
         .spacer-50 { height: 50px; }
@@ -380,15 +380,43 @@
                 options: { plugins: { title: { display: true, text: 'Evolución Anual' } } }
             });
 
-            // 2. Gráfico Pilares (Doughnut)
-            var dataPillars = getCounts('Pilar del SIG');
+            // 2. Gráfico Pilares (Barras Apiladas) - ACTUALIZADO
+            var pData = {
+                'ISO 45001': { O: 0, I: 0, R: 0 },
+                'ISO 14001': { O: 0, I: 0, R: 0 },
+                'ISO 37001': { O: 0, I: 0, R: 0 },
+                'Otras Normas': { O: 0, I: 0, R: 0 }
+            };
+
+            for(var i = 0; i < data.length; i++) {
+                var raw = data[i]['Pilar del SIG'] || '';
+                var p = 'Otras Normas';
+                if(raw === 'SST') p = 'ISO 45001';
+                else if(raw === 'Medio Ambiente') p = 'ISO 14001';
+                else if(raw === 'Antisoborno y Compliance') p = 'ISO 37001';
+
+                var tipo = (data[i]['Tipo de norma'] || '').toUpperCase();
+                if(tipo.includes('OBLIGATORIO')) pData[p].O++;
+                else if(tipo.includes('INFORMATIVO')) pData[p].I++;
+                else if(tipo.includes('REFERENCIAL')) pData[p].R++;
+            }
+
             charts.chartPillars = new Chart(document.getElementById('chartPillars'), {
-                type: 'doughnut',
+                type: 'bar',
                 data: {
-                    labels: Object.keys(dataPillars),
-                    datasets: [{ data: Object.values(dataPillars), backgroundColor: ['#f87171', '#4ade80', '#60a5fa', '#a78bfa'] }]
+                    labels: Object.keys(pData),
+                    datasets: [
+                        { label: 'Obligatoria', data: Object.values(pData).map(function(x){return x.O}), backgroundColor: '#ef4444' },
+                        { label: 'Informativa', data: Object.values(pData).map(function(x){return x.I}), backgroundColor: '#3b82f6' },
+                        { label: 'Referencial', data: Object.values(pData).map(function(x){return x.R}), backgroundColor: '#22c55e' }
+                    ]
                 },
-                options: { plugins: { title: { display: true, text: 'Distribución por Pilares' } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { x: { stacked: true }, y: { stacked: true } },
+                    plugins: { title: { display: true, text: 'Distribución por Pilares' } }
+                }
             });
 
             // 3. Lógica para Autoridades (Top 10 + Otros)
