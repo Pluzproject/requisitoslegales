@@ -129,6 +129,11 @@
                 <input type="text" id="searchInput" placeholder="Buscar norma..." class="w-full px-4 py-2 border rounded-lg text-sm">
                 
                 <div class="space-y-1">
+                    <label class="text-xs font-bold text-gray-500">Fecha Específica</label>
+                    <input type="date" id="filterFecha" class="w-full border rounded-lg text-sm px-3 py-2">
+                </div>
+
+                <div class="space-y-1">
                     <label class="text-xs font-bold text-gray-500">Rango de Fecha</label>
                     <input type="date" id="filterFechaDesde" class="w-full border rounded-lg text-sm px-3 py-2" title="Desde">
                     <input type="date" id="filterFechaHasta" class="w-full border rounded-lg text-sm px-3 py-2" title="Hasta">
@@ -179,7 +184,7 @@
             fetchData();
             
             // Asignación de listeners a los filtros
-            var filterIds = ['searchInput', 'filterFechaDesde', 'filterFechaHasta', 'filterMesAnio', 'filterAnio', 'filterPilar', 'filterTipo'];
+            var filterIds = ['searchInput', 'filterFecha', 'filterFechaDesde', 'filterFechaHasta', 'filterMesAnio', 'filterAnio', 'filterPilar', 'filterTipo'];
             
             for(var i = 0; i < filterIds.length; i++) {
                 document.getElementById(filterIds[i]).addEventListener('change', applyFilters);
@@ -372,6 +377,7 @@
         // Aplicar filtros lógicos
         function applyFilters() {
             var s = document.getElementById('searchInput').value.toLowerCase();
+            var d = document.getElementById('filterFecha').value;
             var start = document.getElementById('filterFechaDesde').value;
             var end = document.getElementById('filterFechaHasta').value;
             var ma = document.getElementById('filterMesAnio').value;
@@ -385,13 +391,14 @@
                 var item = rawData[i];
                 
                 var matchS = (item['Norma'].toLowerCase().includes(s) || item['Sumilla / Descripción'].toLowerCase().includes(s));
+                var matchD = (!d || item.rawD === d);
                 var matchRange = (!start || item.rawD >= start) && (!end || item.rawD <= end);
                 var matchMA = (!ma || item.mesAnio === ma);
                 var matchAN = (!an || item.a === an);
                 var matchPI = (!pi || item['Pilar del SIG'] === pi);
                 var matchTI = (!ti || item['Tipo de norma'] === ti);
                 
-                if(matchS && matchRange && matchMA && matchAN && matchPI && matchTI) {
+                if(matchS && matchD && matchRange && matchMA && matchAN && matchPI && matchTI) {
                     filtered.push(item);
                 }
             }
@@ -402,6 +409,7 @@
         // Reiniciar dashboard
         function resetDashboard() {
             document.getElementById('searchInput').value = '';
+            document.getElementById('filterFecha').value = '';
             document.getElementById('filterFechaDesde').value = '';
             document.getElementById('filterFechaHasta').value = '';
             document.getElementById('filterMesAnio').value = '';
