@@ -11,14 +11,18 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     
     <style>
-        /* Contenedor de gráficos con altura fija */
+        /* =========================================================
+           ESTILOS GENERALES
+           ========================================================= */
         .chart-container { 
             position: relative; 
             height: 350px; 
             width: 100%; 
         }
         
-        /* Estilos detallados de tabla */
+        /* =========================================================
+           ESTILOS DE TABLA
+           ========================================================= */
         th, td { 
             padding: 12px; 
             border-bottom: 1px solid #dbeafe; 
@@ -36,27 +40,36 @@
             background-color: #eff6ff; 
         }
 
-        /* Contenedor principal con espaciado */
+        /* =========================================================
+           CONTENEDOR PRINCIPAL Y ESPACIADO
+           ========================================================= */
         .main-container {
             max-width: 95%;
             margin: 0 auto;
             padding: 2rem 1rem;
         }
+
+        .spacer-10 { height: 10px; }
+        .spacer-20 { height: 20px; }
+        .spacer-30 { height: 30px; }
+
+        /* =========================================================
+           AJUSTES DE INTERFAZ
+           ========================================================= */
+        .header-bg { background-color: #1e3a8a; }
+        .text-blue-custom { color: #1e3a8a; }
     </style>
 </head>
 
 <body class="bg-blue-50 text-blue-900 font-sans min-h-screen">
 
-    <header class="bg-blue-900 text-white shadow-md py-6 px-8 relative">
-        
+    <header class="header-bg text-white shadow-md py-6 px-8 relative">
         <div class="absolute left-6 top-6">
             <img src="https://raw.githubusercontent.com/Pluzproject/requisitoslegales/main/Logo-SGI-Blanco-1.png" alt="Logo SGI" class="h-10 w-auto opacity-90">
         </div>
-
         <div class="flex justify-center items-center">
             <h1 class="text-3xl font-bold tracking-tight">Portal de Requisitos Legales</h1>
         </div>
-
         <div class="absolute right-6 top-6">
             <img src="https://raw.githubusercontent.com/Pluzproject/requisitoslegales/main/Logo%20versi%C3%B3n%20color%20blanco.png" alt="Logo Pluz" class="h-10 w-auto opacity-90">
         </div>
@@ -65,58 +78,38 @@
     <main class="main-container space-y-8">
         
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            
             <div class="bg-blue-900 p-6 rounded-xl text-white shadow-lg">
                 <span class="text-xs uppercase opacity-75">Total Normas</span>
                 <div class="text-5xl font-bold mt-2" id="kpi-total">0</div>
             </div>
-            
             <div class="bg-white p-6 rounded-xl border shadow-sm">
                 <span class="text-xs uppercase font-bold text-emerald-600">Obligatorias</span>
                 <div class="text-3xl font-bold mt-2" id="kpi-obli">0</div>
             </div>
-            
             <div class="bg-white p-6 rounded-xl border shadow-sm">
                 <span class="text-xs uppercase font-bold text-blue-600">Informativas</span>
                 <div class="text-3xl font-bold mt-2" id="kpi-info">0</div>
             </div>
-            
             <div class="bg-white p-6 rounded-xl border shadow-sm">
                 <span class="text-xs uppercase font-bold text-amber-600">Referenciales</span>
                 <div class="text-3xl font-bold mt-2" id="kpi-refe">0</div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="bg-white p-5 rounded-xl border shadow-sm">
-                <div class="chart-container"><canvas id="chartYears"></canvas></div>
-            </div>
-            
-            <div class="bg-white p-5 rounded-xl border shadow-sm">
-                <div class="chart-container"><canvas id="chartPillars"></canvas></div>
-            </div>
-            
-            <div class="bg-white p-5 rounded-xl border shadow-sm">
-                <div class="chart-container"><canvas id="chartTypes"></canvas></div>
-            </div>
-        </div>
+        <div class="spacer-20"></div>
 
         <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden">
-            
             <div class="p-5 bg-blue-50 border-b flex flex-wrap gap-4 items-center">
-                <input type="text" id="searchInput" placeholder="Buscar..." class="w-full md:w-80 px-4 py-2 border rounded-lg text-sm">
+                <input type="text" id="searchInput" placeholder="Buscar..." class="w-full md:w-60 px-4 py-2 border rounded-lg text-sm">
                 
-                <select id="filterPilar" class="border rounded-lg text-sm px-3 py-2">
-                    <option value="">Todos los Pilares</option>
-                </select>
+                <select id="filterDia" class="border rounded-lg text-sm px-3 py-2"><option value="">Día</option></select>
+                <select id="filterMes" class="border rounded-lg text-sm px-3 py-2"><option value="">Mes</option></select>
+                <select id="filterAnio" class="border rounded-lg text-sm px-3 py-2"><option value="">Año</option></select>
                 
-                <select id="filterTipo" class="border rounded-lg text-sm px-3 py-2">
-                    <option value="">Todos los Tipos</option>
-                </select>
-
-                <button id="btnReset" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white font-bold text-sm transition">
-                    BORRAR FILTROS
-                </button>
+                <select id="filterPilar" class="border rounded-lg text-sm px-3 py-2"><option value="">Todos los Pilares</option></select>
+                <select id="filterTipo" class="border rounded-lg text-sm px-3 py-2"><option value="">Todos los Tipos</option></select>
+                
+                <button id="btnReset" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white font-bold text-sm transition">RESET FILTROS</button>
             </div>
             
             <div class="overflow-x-auto">
@@ -140,41 +133,29 @@
     </main>
 
     <script>
-        // Registrar plugin de etiquetas para Chart.js
+        // =========================================================
+        // CONFIGURACIÓN E INICIALIZACIÓN
+        // =========================================================
         Chart.register(ChartDataLabels);
-
-        // --- VARIABLES GLOBALES ---
         const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIGndiBxp88Vdkl1NdJ4W63zLqKeotEg8_gBqUMnSz4JHef48eET9R6A265qibhQDbZUUxe5kM-n4L/pub?output=csv';
         let rawData = [];
-        let charts = {};
 
-        // --- FUNCIONES DE UTILIDAD ---
-        function decodeHtml(html) {
-            const txt = document.createElement("textarea");
-            txt.innerHTML = html;
-            return txt.value;
-        }
-
-        function getColors(n) {
-            const colors = [];
-            for (let i = 0; i < n; i++) {
-                const hue = (i * 360) / n;
-                colors.push('hsl(' + hue + ', 70%, 60%)');
-            }
-            return colors;
-        }
-
-        // --- INICIALIZACIÓN ---
         window.addEventListener('DOMContentLoaded', function() {
+            console.log("Iniciando carga de datos...");
             fetchData();
             
-            document.getElementById('searchInput').addEventListener('input', applyFilters);
-            document.getElementById('filterPilar').addEventListener('change', applyFilters);
-            document.getElementById('filterTipo').addEventListener('change', applyFilters);
+            // Asignación de listeners
+            const filters = ['searchInput', 'filterDia', 'filterMes', 'filterAnio', 'filterPilar', 'filterTipo'];
+            for(let i = 0; i < filters.length; i++) {
+                document.getElementById(filters[i]).addEventListener('change', applyFilters);
+                document.getElementById(filters[i]).addEventListener('input', applyFilters);
+            }
             document.getElementById('btnReset').addEventListener('click', resetDashboard);
         });
 
-        // --- LÓGICA DE DATOS ---
+        // =========================================================
+        // CARGA DE DATOS DESDE GOOGLE SHEETS
+        // =========================================================
         function fetchData() {
             Papa.parse(csvUrl, {
                 download: true,
@@ -182,91 +163,86 @@
                 skipEmptyLines: true,
                 complete: function(results) {
                     rawData = [];
-                    for (let i = 0; i < results.data.length; i++) {
-                        const row = results.data[i];
-                        const normaText = (row['Norma'] || '').trim().toUpperCase();
-                        if (normaText !== "" && normaText !== "SIN NOVEDAD") {
-                            rawData.push({
-                                ...row,
-                                year: (row['Fecha'] || '').split('/')[2] || 'N/A'
-                            });
+                    for(let i = 0; i < results.data.length; i++) {
+                        let row = results.data[i];
+                        let normaText = (row['Norma'] || '').trim().toUpperCase();
+                        
+                        // Exclusión de registros sin novedad
+                        if(normaText !== "" && normaText !== "SIN NOVEDAD") {
+                            let fechaParts = (row['Fecha'] || '').split('/');
+                            row.d = fechaParts[0] || '';
+                            row.m = fechaParts[1] || '';
+                            row.a = fechaParts[2] || '';
+                            rawData.push(row);
                         }
                     }
-                    populateDropdowns(rawData);
+                    populateFilters();
                     renderAll(rawData);
                 }
             });
         }
 
-        function populateDropdowns(data) {
-            const pilarSelect = document.getElementById('filterPilar');
-            const tipoSelect = document.getElementById('filterTipo');
-            
-            const pilares = [];
-            const tipos = [];
-            
-            for (let i = 0; i < data.length; i++) {
-                if (data[i]['Pilar del SIG'] && !pilares.includes(data[i]['Pilar del SIG'])) {
-                    pilares.push(data[i]['Pilar del SIG']);
+        // =========================================================
+        // LÓGICA PARA POBLAR SELECTS DE FILTROS
+        // =========================================================
+        function populateFilters() {
+            const getUnique = function(key) {
+                let list = [];
+                for(let i = 0; i < rawData.length; i++) {
+                    let val = rawData[i][key];
+                    if(val && list.indexOf(val) === -1) list.push(val);
                 }
-                if (data[i]['Tipo de norma'] && !tipos.includes(data[i]['Tipo de norma'])) {
-                    tipos.push(data[i]['Tipo de norma']);
+                return list.sort();
+            };
+
+            const fillSelect = function(id, data) {
+                let select = document.getElementById(id);
+                for(let i = 0; i < data.length; i++) {
+                    let opt = document.createElement('option');
+                    opt.value = data[i];
+                    opt.textContent = data[i];
+                    select.appendChild(opt);
                 }
-            }
-            
-            for (let i = 0; i < pilares.length; i++) {
-                const opt = document.createElement('option');
-                opt.value = pilares[i];
-                opt.textContent = pilares[i];
-                pilarSelect.appendChild(opt);
-            }
-            for (let i = 0; i < tipos.length; i++) {
-                const opt = document.createElement('option');
-                opt.value = tipos[i];
-                opt.textContent = tipos[i];
-                tipoSelect.appendChild(opt);
-            }
+            };
+
+            fillSelect('filterDia', getUnique('d'));
+            fillSelect('filterMes', getUnique('m'));
+            fillSelect('filterAnio', getUnique('a'));
+            fillSelect('filterPilar', getUnique('Pilar del SIG'));
+            fillSelect('filterTipo', getUnique('Tipo de norma'));
         }
 
+        // =========================================================
+        // LÓGICA DE RENDERIZADO DE TABLA Y KPIs
+        // =========================================================
         function renderAll(data) {
-            renderTable(data);
-            renderKPIs(data);
-            updateCharts(data);
-        }
-
-        function renderTable(data) {
-            const tbody = document.getElementById('tableBody');
+            let tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             
-            const reversedData = [...data].reverse();
-            for (let i = 0; i < reversedData.length; i++) {
-                const item = reversedData[i];
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-blue-50";
+            let reversed = [...data].reverse();
+            for(let i = 0; i < reversed.length; i++) {
+                let item = reversed[i];
+                let tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="whitespace-nowrap">${item['Fecha'] || '-'}</td>
-                    <td class="font-bold">${decodeHtml(item['Norma'] || '-')}</td>
+                    <td class="font-bold">${item['Norma'] || '-'}</td>
                     <td><span class="px-2 py-1 bg-blue-100 rounded text-xs">${item['Pilar del SIG'] || '-'}</span></td>
-                    <td class="text-xs">${decodeHtml(item['Sumilla / Descripción'] || '-')}</td>
-                    <td class="text-xs">${decodeHtml(item['Autoridad'] || '-')}</td>
+                    <td class="text-xs">${item['Sumilla / Descripción'] || '-'}</td>
+                    <td class="text-xs">${item['Autoridad'] || '-'}</td>
                     <td class="text-xs">${item['Tipo de norma'] || '-'}</td>
                     <td>${(item['Enlace'] && item['Enlace'] !== '--') ? `<a href="${item['Enlace']}" target="_blank" class="text-blue-600 underline">Ver</a>` : '-'}</td>
-                    <td class="text-xs italic">${decodeHtml(item['Recomendación'] || '-')}</td>
+                    <td class="text-xs italic">${item['Recomendación'] || '-'}</td>
                 `;
                 tbody.appendChild(tr);
             }
-        }
 
-        function renderKPIs(data) {
-            let obli = 0;
-            let info = 0;
-            let refe = 0;
-            
-            for (let i = 0; i < data.length; i++) {
-                const tipo = (data[i]['Tipo de norma'] || '').trim().toUpperCase();
-                if (tipo.includes('OBLIGATORIO')) { obli++; }
-                else if (tipo.includes('INFORMATIVO')) { info++; }
-                else if (tipo.includes('REFERENCIAL')) { refe++; }
+            // --- CÁLCULO DE KPIs ---
+            let obli = 0, info = 0, refe = 0;
+            for(let i = 0; i < data.length; i++) {
+                let t = (data[i]['Tipo de norma'] || '').toUpperCase();
+                if(t.includes('OBLIGATORIO')) obli++;
+                else if(t.includes('INFORMATIVO')) info++;
+                else if(t.includes('REFERENCIAL')) refe++;
             }
             
             document.getElementById('kpi-total').textContent = data.length;
@@ -275,19 +251,28 @@
             document.getElementById('kpi-refe').textContent = refe;
         }
 
+        // =========================================================
+        // LÓGICA DE FILTRADO Y RESET
+        // =========================================================
         function applyFilters() {
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            const pilar = document.getElementById('filterPilar').value;
-            const tipo = document.getElementById('filterTipo').value;
-            
-            const filtered = [];
-            for (let i = 0; i < rawData.length; i++) {
-                const item = rawData[i];
-                const matchSearch = (item['Norma'] || '').toLowerCase().includes(search) || (item['Sumilla / Descripción'] || '').toLowerCase().includes(search);
-                const matchPilar = !pilar || item['Pilar del SIG'] === pilar;
-                const matchTipo = !tipo || item['Tipo de norma'] === tipo;
-                
-                if (matchSearch && matchPilar && matchTipo) {
+            let s = document.getElementById('searchInput').value.toLowerCase();
+            let d = document.getElementById('filterDia').value;
+            let m = document.getElementById('filterMes').value;
+            let a = document.getElementById('filterAnio').value;
+            let p = document.getElementById('filterPilar').value;
+            let t = document.getElementById('filterTipo').value;
+
+            let filtered = [];
+            for(let i = 0; i < rawData.length; i++) {
+                let item = rawData[i];
+                let matchS = (item['Norma'].toLowerCase().includes(s) || item['Sumilla / Descripción'].toLowerCase().includes(s));
+                let matchD = (!d || item.d === d);
+                let matchM = (!m || item.m === m);
+                let matchA = (!a || item.a === a);
+                let matchP = (!p || item['Pilar del SIG'] === p);
+                let matchT = (!t || item['Tipo de norma'] === t);
+
+                if(matchS && matchD && matchM && matchA && matchP && matchT) {
                     filtered.push(item);
                 }
             }
@@ -295,64 +280,11 @@
         }
 
         function resetDashboard() {
-            document.getElementById('searchInput').value = '';
-            document.getElementById('filterPilar').value = '';
-            document.getElementById('filterTipo').value = '';
+            let ids = ['searchInput', 'filterDia', 'filterMes', 'filterAnio', 'filterPilar', 'filterTipo'];
+            for(let i = 0; i < ids.length; i++) {
+                document.getElementById(ids[i]).value = '';
+            }
             renderAll(rawData);
-        }
-
-        function updateCharts(data) {
-            if (charts.chartYears) charts.chartYears.destroy();
-            if (charts.chartPillars) charts.chartPillars.destroy();
-            if (charts.chartTypes) charts.chartTypes.destroy();
-            
-            function getCounts(key) {
-                const counts = {};
-                for (let i = 0; i < data.length; i++) {
-                    const val = data[i][key] || 'N/A';
-                    counts[val] = (counts[val] || 0) + 1;
-                }
-                return counts;
-            }
-            
-            const yData = getCounts('year');
-            charts.chartYears = new Chart(document.getElementById('chartYears'), {
-                type: 'bar', 
-                data: { labels: Object.keys(yData), datasets: [{ label: 'Normas', data: Object.values(yData), backgroundColor: '#3b82f6' }] },
-                options: { plugins: { title: { display: true, text: 'Evolución Anual' } } }
-            });
-            
-            function createDoughnut(canvasId, dataObj, titleText) {
-                return new Chart(document.getElementById(canvasId), {
-                    type: 'doughnut',
-                    data: { 
-                        labels: Object.keys(dataObj), 
-                        datasets: [{ 
-                            data: Object.values(dataObj), 
-                            backgroundColor: getColors(Object.keys(dataObj).length) 
-                        }] 
-                    },
-                    options: {
-                        plugins: {
-                            title: { display: true, text: titleText },
-                            datalabels: {
-                                formatter: function(value, context) {
-                                    const dataSet = context.dataset.data;
-                                    let sum = 0;
-                                    for (let i = 0; i < dataSet.length; i++) { sum += dataSet[i]; }
-                                    const percentage = ((value * 100) / sum).toFixed(1) + "%";
-                                    return value + "\n(" + percentage + ")";
-                                },
-                                color: '#000',
-                                font: { weight: 'bold' }
-                            }
-                        }
-                    }
-                });
-            }
-
-            charts.chartPillars = createDoughnut('chartPillars', getCounts('Pilar del SIG'), 'Distribución por Pilares');
-            charts.chartTypes = createDoughnut('chartTypes', getCounts('Tipo de norma'), 'Distribución por Tipos');
         }
     </script>
 </body>
