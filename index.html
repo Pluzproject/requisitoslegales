@@ -427,7 +427,7 @@
                 finalData.push(others);
             }
 
-            // Gráfico de Autoridad (Barra Horizontal - Modificado según tus preferencias)
+            // Gráfico de Autoridad (Barra Horizontal - Modificado para números blancos)
             charts.chartAuthorities = new Chart(document.getElementById('chartAuthorities'), {
                 type: 'bar',
                 data: {
@@ -444,7 +444,13 @@
                     indexAxis: 'y', 
                     plugins: { 
                         title: { display: true, text: 'Top 10 Autoridades' },
-                        legend: { display: false }
+                        legend: { display: false },
+                        datalabels: {
+                            color: '#ffffff', // COLOR BLANCO PARA LOS NÚMEROS
+                            anchor: 'end',    // Posición al final de la barra
+                            align: 'start',   // Alineado dentro de la barra
+                            font: { weight: 'bold' }
+                        }
                     },
                     scales: {
                         x: { 
